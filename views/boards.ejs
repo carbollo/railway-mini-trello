@@ -91,27 +91,6 @@
         align-items: center;
         gap: 10px;
       }
-      .nav-avatars {
-        display: flex;
-      }
-      .av {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        font-size: 11px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid var(--bg2);
-        margin-left: -7px;
-        cursor: pointer;
-        transition: transform 0.15s;
-      }
-      .av:hover {
-        transform: scale(1.15);
-        z-index: 10 !important;
-      }
       .btn {
         font-family: var(--ff);
         font-size: 13px;
@@ -599,14 +578,6 @@
         <button class="nav-tab" onclick="toast('Próximamente')">Analytics</button>
       </div>
       <div class="nav-right">
-        <div class="nav-avatars">
-          <div
-            class="av"
-            style="background:rgba(127,119,221,.3);color:#afa9ec"
-          >
-            NK
-          </div>
-        </div>
         <button class="btn btn-ghost" type="button" onclick="toast('Próximamente')">
           Invitar
         </button>
@@ -620,12 +591,6 @@
       <!-- SIDEBAR -->
       <aside class="sidebar">
         <div class="sidebar-workspace">
-          <div
-            class="ws-icon"
-            style="background:rgba(127,119,221,0.2);color:#afa9ec"
-          >
-            NK
-          </div>
           <div class="ws-info">
             <div class="ws-name">Workspace</div>
             <div class="ws-plan">Mini Trello</div>
