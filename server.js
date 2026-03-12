@@ -54,7 +54,8 @@ async function ensureSchema() {
       position INTEGER NOT NULL DEFAULT 0,
       due_date DATE,
       labels TEXT,
-      is_archived BOOLEAN NOT NULL DEFAULT FALSE
+      is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+      is_done BOOLEAN NOT NULL DEFAULT FALSE
     );
   `);
 
@@ -63,7 +64,8 @@ async function ensureSchema() {
     ALTER TABLE cards
     ADD COLUMN IF NOT EXISTS due_date DATE,
     ADD COLUMN IF NOT EXISTS labels TEXT,
-    ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS is_done BOOLEAN NOT NULL DEFAULT FALSE;
   `);
 
   await pool.query(`
@@ -442,6 +444,20 @@ app.post('/cards/:id/delete', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error eliminando tarjeta');
+  }
+});
+
+// Marcar / desmarcar tarjeta como completada
+app.post('/cards/:id/toggle-done', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('UPDATE cards SET is_done = NOT is_done WHERE id = $1', [cardId]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando estado de tarjeta');
   }
 });
 

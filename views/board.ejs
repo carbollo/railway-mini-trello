@@ -422,6 +422,10 @@
         line-height: 1.55;
         margin-bottom: 10px;
       }
+      .card[data-done="1"] .card-title {
+        text-decoration: line-through;
+        color: var(--text3);
+      }
       .card-footer {
         display: flex;
         align-items: center;
@@ -629,6 +633,7 @@
               data-card-id="<%= card.id %>"
               data-title="<%= card.title.toLowerCase() %>"
               data-labels="<%= (card.labels || '').toLowerCase() %>"
+              data-done="<%= card.is_done ? '1' : '0' %>"
             >
               <div class="card-tags">
                 <span class="tag <%= tagClass %>"><%= labelText %></span>
@@ -646,6 +651,32 @@
                   </span>
                   <% } %>
                 </div>
+                <form
+                  method="POST"
+                  action="/cards/<%= card.id %>/toggle-done"
+                  style="margin:0"
+                >
+                  <input type="hidden" name="boardId" value="<%= board.id %>" />
+                  <button
+                    type="submit"
+                    title="Marcar completada"
+                    style="
+                      background: transparent;
+                      border: 1px solid <%= card.is_done ? '#22c55e' : 'var(--border2)' %>;
+                      color: <%= card.is_done ? '#22c55e' : 'var(--text3)' %>;
+                      border-radius: 6px;
+                      width: 24px;
+                      height: 24px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 13px;
+                      cursor: pointer;
+                    "
+                  >
+                    <%= card.is_done ? '✓' : '' %>
+                  </button>
+                </form>
               </div>
             </div>
             <% }) %>

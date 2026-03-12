@@ -333,8 +333,16 @@
               <div class="day-num"><%= cell.dayNum %></div>
               <div class="cal-events">
                 <% cell.cards.forEach(function (card) { %>
-                <div class="cal-event" style="background: rgba(127,119,221,0.22);">
-                  <div><%= card.title %></div>
+                <div
+                  class="cal-event"
+                  style="background: rgba(127,119,221,0.22); opacity:<%= card.is_done ? 0.55 : 1 %>;"
+                >
+                  <div>
+                    <% if (card.is_done) { %>
+                    ✓
+                    <% } %>
+                    <%= card.title %>
+                  </div>
                   <div class="event-board"><%= card.list_name %></div>
                 </div>
                 <% }) %>
