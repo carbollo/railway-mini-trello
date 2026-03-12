@@ -91,14 +91,6 @@
       <div class="board-scroll" id="board">
         <% lists.forEach(function (list, ci) { %>
         <% const cardsForList = (cardsByList[list.id] || []); %>
-        <% const checklistDoneCount = function(cardId) {
-             const items = (checklistsByCard && checklistsByCard[cardId]) || [];
-             return items.filter(i => i.is_done).length;
-           }; %>
-        <% const checklistTotalCount = function(cardId) {
-             const items = (checklistsByCard && checklistsByCard[cardId]) || [];
-             return items.length;
-           }; %>
 
         <div class="col" data-list-id="<%= list.id %>">
           <div class="col-header">
@@ -115,8 +107,7 @@
             </form>
           </div>
           <div class="col-progress">
-            <% const doneCards = cardsForList.filter(function (c) { return checklistTotalCount(c.id) > 0 && checklistDoneCount(c.id) === checklistTotalCount(c.id); }); %>
-            <% const pct = cardsForList.length ? Math.round(doneCards.length / cardsForList.length * 100) : 0; %>
+            <% const pct = 0; %>
             <div class="progress-bar">
               <div class="progress-fill" style="width:<%= pct %>%"></div>
             </div>
