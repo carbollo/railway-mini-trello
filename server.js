@@ -7,8 +7,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Configuración de base de datos (Railway usa DATABASE_URL)
+const rawDbUrl = process.env.DATABASE_URL || '';
+const dbUrlPreview = rawDbUrl ? `${rawDbUrl.slice(0, 25)}...` : '(no definida)';
+console.log('DATABASE_URL (preview):', dbUrlPreview);
+console.log('DATABASE_SSL:', process.env.DATABASE_SSL);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: rawDbUrl || undefined,
   ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
 });
 
