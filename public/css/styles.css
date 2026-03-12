@@ -45,6 +45,25 @@ body.page {
   border-color: #38bdf8;
 }
 
+.board-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-link {
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.nav-link:hover {
+  border-color: #38bdf8;
+}
+
 .content {
   padding: 2rem;
   display: flex;
@@ -171,6 +190,77 @@ button:hover {
 
 .board {
   padding: 1.5rem 1.5rem 2rem;
+}
+
+.board-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.board-description {
+  flex: 2;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.board-description-empty {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.board-edit-form {
+  flex: 2;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.board-edit-form input[type='text'] {
+  font-size: 0.85rem;
+}
+
+.board-filter {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.board-filter input[type='text'] {
+  font-size: 0.85rem;
+}
+
+.archived-section {
+  margin-bottom: 1.2rem;
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+}
+
+.archived-section h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+}
+
+.archived-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.archived-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+}
+
+.archived-list-name {
+  font-size: 0.75rem;
+  margin-left: 0.4rem;
+  color: #9ca3af;
 }
 
 .lists {
@@ -403,6 +493,11 @@ button:hover {
 
   .panel {
     padding: 1.4rem;
+  }
+
+  .board-edit-form {
+    flex-direction: column;
+    width: 100%;
   }
 }
 

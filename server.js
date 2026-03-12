@@ -25,7 +25,8 @@ async function ensureSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS boards (
       id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL
+      name TEXT NOT NULL,
+      description TEXT
     );
   `);
 
@@ -76,6 +77,11 @@ async function ensureSchema() {
       is_done BOOLEAN NOT NULL DEFAULT FALSE
     );
   `);
+
+  await pool.query(`
+    ALTER TABLE boards
+    ADD COLUMN IF NOT EXISTS description TEXT;
+  `);
 }
 
 // Página principal: listado de tableros
@@ -104,13 +110,34 @@ app.post('/boards/:id/delete', async (req, res) => {
 // Crear tablero
 app.post('/boards', async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, description } = req.body;
     if (!name) return res.redirect('/');
-    await pool.query('INSERT INTO boards (name) VALUES ($1)', [name]);
+    await pool.query('INSERT INTO boards (name, description) VALUES ($1, $2)', [
+      name,
+      description || null,
+    ]);
     res.redirect('/');
   } catch (err) {
     console.error(err);
     res.status(500).send('Error creando tablero');
+  }
+});
+
+// Actualizar tablero (nombre y descripción)
+app.post('/boards/:id/update', async (req, res) => {
+  const boardId = req.params.id;
+  const { name, description } = req.body;
+  if (!name) return res.redirect(`/boards/${boardId}`);
+  try {
+    await pool.query('UPDATE boards SET name = $1, description = $2 WHERE id = $3', [
+      name,
+      description || null,
+      boardId,
+    ]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando tablero');
   }
 });
 
@@ -165,10 +192,53 @@ app.get('/boards/:id', async (req, res) => {
       }, {});
     }
 
-    res.render('board', { board, lists, cardsByList, commentsByCard, checklistsByCard });
+    res.render('board', {
+      board,
+      lists,
+      cardsByList,
+      commentsByCard,
+      checklistsByCard,
+      archivedCards: [],
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error cargando tablero');
+  }
+});
+
+// Ver tarjetas archivadas de un tablero
+app.get('/boards/:id/archive', async (req, res) => {
+  const boardId = req.params.id;
+  try {
+    const { rows: boardRows } = await pool.query('SELECT * FROM boards WHERE id = $1', [boardId]);
+    if (boardRows.length === 0) return res.status(404).send('Tablero no encontrado');
+    const board = boardRows[0];
+
+    const { rows: lists } = await pool.query(
+      'SELECT * FROM lists WHERE board_id = $1 ORDER BY position ASC, id ASC',
+      [boardId]
+    );
+
+    const { rows: archivedCards } = await pool.query(
+      `SELECT c.*, l.name AS list_name
+       FROM cards c
+       JOIN lists l ON c.list_id = l.id
+       WHERE c.is_archived = TRUE AND l.board_id = $1
+       ORDER BY l.position ASC, c.position ASC, c.id ASC`,
+      [boardId]
+    );
+
+    res.render('board', {
+      board,
+      lists,
+      cardsByList: {},
+      commentsByCard: {},
+      checklistsByCard: {},
+      archivedCards,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error cargando archivadas');
   }
 });
 
@@ -259,6 +329,20 @@ app.post('/cards/:id/archive', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error archivando tarjeta');
+  }
+});
+
+// Desarchivar tarjeta
+app.post('/cards/:id/unarchive', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('UPDATE cards SET is_archived = FALSE WHERE id = $1', [cardId]);
+    res.redirect(`/boards/${boardId}/archive`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error desarchivando tarjeta');
   }
 });
 

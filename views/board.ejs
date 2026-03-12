@@ -9,9 +9,81 @@
     <header class="topbar">
       <a href="/" class="back-link">&larr; Tableros</a>
       <h1 class="logo"><%= board.name %></h1>
+      <nav class="board-nav">
+        <a href="/boards/<%= board.id %>" class="nav-link">Tablero</a>
+        <a href="/boards/<%= board.id %>/archive" class="nav-link">Archivadas</a>
+      </nav>
     </header>
 
     <main class="board">
+      <section class="board-header">
+        <div class="board-description">
+          <% if (board.description) { %>
+          <p><%= board.description %></p>
+          <% } else { %>
+          <p class="board-description-empty">
+            Añade una descripción para este tablero (contexto, objetivos, etc.).
+          </p>
+          <% } %>
+        </div>
+        <form
+          class="board-edit-form"
+          method="POST"
+          action="/boards/<%= board.id %>/update"
+        >
+          <input
+            type="text"
+            name="name"
+            value="<%= board.name %>"
+            required
+          />
+          <input
+            type="text"
+            name="description"
+            value="<%= board.description || '' %>"
+            placeholder="Descripción del tablero"
+          />
+          <button type="submit" class="btn-small">Actualizar tablero</button>
+        </form>
+
+        <div class="board-filter">
+          <input
+            type="text"
+            id="card-filter"
+            placeholder="Filtrar tarjetas por título o etiqueta..."
+          />
+        </div>
+      </section>
+
+      <% if (archivedCards && archivedCards.length > 0) { %>
+      <section class="archived-section">
+        <h2>Tarjetas archivadas</h2>
+        <ul class="archived-list">
+          <% archivedCards.forEach(function (card) { %>
+          <li>
+            <div class="archived-card">
+              <div>
+                <strong><%= card.title %></strong>
+                <span class="archived-list-name">en lista: <%= card.list_name %></span>
+                <% if (card.labels) { %>
+                <span class="card-labels"><%= card.labels %></span>
+                <% } %>
+              </div>
+              <form
+                method="POST"
+                action="/cards/<%= card.id %>/unarchive"
+                class="inline-form"
+              >
+                <input type="hidden" name="boardId" value="<%= board.id %>" />
+                <button type="submit" class="btn-small">Desarchivar</button>
+              </form>
+            </div>
+          </li>
+          <% }) %>
+        </ul>
+      </section>
+      <% } %>
+
       <section class="lists">
         <% lists.forEach(function (list) { %>
         <div class="list-column" data-list-id="<%= list.id %>">
@@ -32,6 +104,8 @@
               class="card"
               draggable="true"
               data-card-id="<%= card.id %>"
+              data-title="<%= card.title.toLowerCase() %>"
+              data-labels="<%= (card.labels || '').toLowerCase() %>"
             >
               <div class="card-main">
                 <h3><%= card.title %></h3>
@@ -316,6 +390,21 @@
         if (!form) return;
         form.classList.toggle('hidden');
       });
+
+      // Filtro rápido de tarjetas por texto (título o etiquetas)
+      const filterInput = document.getElementById('card-filter');
+      if (filterInput) {
+        filterInput.addEventListener('input', () => {
+          const term = filterInput.value.trim().toLowerCase();
+          const cards = document.querySelectorAll('.card[data-card-id]');
+          cards.forEach((card) => {
+            const title = card.getAttribute('data-title') || '';
+            const labels = card.getAttribute('data-labels') || '';
+            const matches = !term || title.includes(term) || labels.includes(term);
+            card.style.display = matches ? '' : 'none';
+          });
+        });
+      }
     </script>
   </body>
 </html>
