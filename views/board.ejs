@@ -86,10 +86,13 @@
       <% } %>
 
       <section class="lists">
-        <% lists.forEach(function (list) { %>
+        <% lists.forEach(function (list, listIndex) { %>
         <div class="list-column" data-list-id="<%= list.id %>">
           <div class="list-header">
             <h2><%= list.name %></h2>
+            <span class="list-count">
+              <%= (cardsByList[list.id] || []).length %>
+            </span>
             <form
               method="POST"
               action="/lists/<%= list.id %>/delete"
