@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tableros | Mini Trello</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="page">
+    <header class="topbar">
+      <h1 class="logo">Mini Trello</h1>
+    </header>
+
+    <main class="content">
+      <section class="panel">
+        <h2>Tableros</h2>
+        <div class="boards-list">
+          <% if (boards.length === 0) { %>
+          <p>No hay tableros aún. Crea el primero.</p>
+          <% } %>
+          <ul>
+            <% boards.forEach(function (b) { %>
+            <li>
+              <a href="/boards/<%= b.id %>" class="board-link"><%= b.name %></a>
+            </li>
+            <% }) %>
+          </ul>
+        </div>
+
+        <form class="form-inline" method="POST" action="/boards">
+          <input
+            type="text"
+            name="name"
+            placeholder="Nombre del tablero"
+            required
+          />
+          <button type="submit">Crear tablero</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
+

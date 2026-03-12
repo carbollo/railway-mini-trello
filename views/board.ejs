@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= board.name %> | Mini Trello</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="page">
+    <header class="topbar">
+      <a href="/" class="back-link">&larr; Tableros</a>
+      <h1 class="logo"><%= board.name %></h1>
+    </header>
+
+    <main class="board">
+      <section class="lists">
+        <% lists.forEach(function (list) { %>
+        <div class="list-column" data-list-id="<%= list.id %>">
+          <h2><%= list.name %></h2>
+          <div class="cards" data-list-id="<%= list.id %>">
+            <% (cardsByList[list.id] || []).forEach(function (card) { %>
+            <article
+              class="card"
+              draggable="true"
+              data-card-id="<%= card.id %>"
+            >
+              <h3><%= card.title %></h3>
+              <% if (card.description) { %>
+              <p><%= card.description %></p>
+              <% } %>
+            </article>
+            <% }) %>
+          </div>
+          <form
+            class="card-form"
+            method="POST"
+            action="/lists/<%= list.id %>/cards"
+          >
+            <input type="hidden" name="boardId" value="<%= board.id %>" />
+            <input
+              type="text"
+              name="title"
+              placeholder="Título de la tarjeta"
+              required
+            />
+            <textarea
+              name="description"
+              placeholder="Descripción (opcional)"
+            ></textarea>
+            <button type="submit">Añadir tarjeta</button>
+          </form>
+        </div>
+        <% }) %>
+
+        <div class="list-column list-new">
+          <h2>Nueva lista</h2>
+          <form method="POST" action="/boards/<%= board.id %>/lists">
+            <input
+              type="text"
+              name="name"
+              placeholder="Nombre de la lista"
+              required
+            />
+            <button type="submit">Crear lista</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Drag & Drop simple para mover tarjetas entre listas
+      let draggedCard = null;
+
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('card')) {
+          draggedCard = e.target;
+          e.dataTransfer.effectAllowed = 'move';
+        }
+      });
+
+      document.addEventListener('dragover', (e) => {
+        if (e.target.classList.contains('cards') || e.target.classList.contains('card')) {
+          e.preventDefault();
+        }
+      });
+
+      document.addEventListener('drop', async (e) => {
+        if (!draggedCard) return;
+
+        const cardsContainer = e.target.closest('.cards');
+        if (!cardsContainer) return;
+
+        e.preventDefault();
+
+        const listId = cardsContainer.getAttribute('data-list-id');
+        const cardId = draggedCard.getAttribute('data-card-id');
+
+        cardsContainer.appendChild(draggedCard);
+
+        try {
+          await fetch('/cards/' + cardId + '/move', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              targetListId: listId,
+            }),
+          });
+        } catch (err) {
+          console.error('Error moviendo tarjeta', err);
+        } finally {
+          draggedCard = null;
+        }
+      });
+    </script>
+  </body>
+</html>
+
