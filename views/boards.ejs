@@ -2,56 +2,868 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Tableros | Mini Trello</title>
-    <link rel="stylesheet" href="/css/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tableros — flow.board</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0f0f11;
+        --bg2: #1a1a1e;
+        --bg3: #232329;
+        --bg4: #2c2c35;
+        --border: rgba(255, 255, 255, 0.08);
+        --border2: rgba(255, 255, 255, 0.14);
+        --text: #f0f0f0;
+        --text2: #9b9ba8;
+        --text3: #5c5c6e;
+        --accent: #7f77dd;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --ff: 'Syne', sans-serif;
+      }
+      body {
+        font-family: var(--ff);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        height: 52px;
+        background: var(--bg2);
+        border-bottom: 0.5px solid var(--border);
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .nav-logo {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: var(--text);
+      }
+      .nav-logo span {
+        color: var(--accent);
+      }
+      .nav-center {
+        display: flex;
+        gap: 4px;
+      }
+      .nav-tab {
+        font-family: var(--ff);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text2);
+        padding: 6px 14px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .nav-tab:hover {
+        background: var(--bg3);
+        color: var(--text);
+      }
+      .nav-tab.active {
+        background: var(--bg4);
+        color: var(--text);
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .nav-avatars {
+        display: flex;
+      }
+      .av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg2);
+        margin-left: -7px;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+      .av:hover {
+        transform: scale(1.15);
+        z-index: 10 !important;
+      }
+      .btn {
+        font-family: var(--ff);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 16px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          opacity 0.15s,
+          background 0.15s;
+        border: none;
+      }
+      .btn-ghost {
+        background: var(--bg3);
+        color: var(--text2);
+      }
+      .btn-ghost:hover {
+        background: var(--bg4);
+        color: var(--text);
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-accent:hover {
+        opacity: 0.88;
+      }
+      .layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        border-right: 0.5px solid var(--border);
+        padding: 20px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        background: var(--bg2);
+      }
+      .sidebar-section {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--text3);
+        padding: 8px 10px 6px;
+        margin-top: 8px;
+      }
+      .sidebar-section:first-child {
+        margin-top: 0;
+      }
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text2);
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s;
+        position: relative;
+      }
+      .sidebar-item:hover {
+        background: var(--bg3);
+        color: var(--text);
+      }
+      .sidebar-item.active {
+        background: var(--bg4);
+        color: var(--text);
+      }
+      .sidebar-item .icon {
+        font-size: 14px;
+        width: 18px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .sidebar-item .badge {
+        margin-left: auto;
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 20px;
+        padding: 1px 7px;
+      }
+      .sidebar-workspace {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: var(--bg3);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        cursor: pointer;
+      }
+      .ws-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .ws-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .ws-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .ws-plan {
+        font-size: 10px;
+        color: var(--text3);
+      }
+      .ws-chevron {
+        color: var(--text3);
+        font-size: 11px;
+      }
+      .main {
+        flex: 1;
+        padding: 32px 36px;
+        overflow-y: auto;
+        min-width: 0;
+      }
+      .main::-webkit-scrollbar {
+        width: 6px;
+      }
+      .main::-webkit-scrollbar-thumb {
+        background: var(--bg4);
+        border-radius: 3px;
+      }
+      .hero {
+        background: linear-gradient(
+          135deg,
+          rgba(127, 119, 221, 0.12) 0%,
+          rgba(29, 158, 117, 0.08) 100%
+        );
+        border: 0.5px solid rgba(127, 119, 221, 0.2);
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: '';
+        position: absolute;
+        right: -40px;
+        top: -40px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(127, 119, 221, 0.12) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .hero-greeting {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--accent);
+        margin-bottom: 6px;
+      }
+      .hero-title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .hero-sub {
+        font-size: 13px;
+        color: var(--text2);
+        line-height: 1.6;
+        max-width: 420px;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+      }
+      .section-link {
+        font-size: 12px;
+        color: var(--text3);
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+      .section-link:hover {
+        color: var(--text2);
+      }
+      .boards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 36px;
+      }
+      .board-card {
+        border-radius: var(--radius);
+        border: 0.5px solid var(--border);
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+        overflow: hidden;
+        background: var(--bg2);
+        position: relative;
+        text-decoration: none;
+        color: inherit;
+      }
+      .board-card:hover {
+        border-color: var(--border2);
+        transform: translateY(-2px);
+      }
+      .board-thumb {
+        height: 110px;
+        position: relative;
+        overflow: hidden;
+      }
+      .board-mini-cols {
+        display: flex;
+        gap: 5px;
+        padding: 12px 12px 0;
+        height: 100%;
+        align-items: flex-start;
+      }
+      .mini-col {
+        flex: 1;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+      }
+      .mini-card {
+        border-radius: 3px;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .mini-card.accent {
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .board-info {
+        padding: 12px 14px 14px;
+      }
+      .board-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .board-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .board-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .board-tag {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        background: rgba(127, 119, 221, 0.18);
+        color: #afa9ec;
+        border: 0.5px solid rgba(127, 119, 221, 0.25);
+      }
+      .board-updated {
+        font-size: 11px;
+        color: var(--text3);
+      }
+      .new-board-card {
+        border-radius: var(--radius);
+        border: 0.5px dashed var(--border2);
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 20px;
+        min-height: 174px;
+        background: transparent;
+      }
+      .new-board-card:hover {
+        background: var(--bg3);
+        border-color: rgba(127, 119, 221, 0.4);
+      }
+      .new-board-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 0.5px dashed var(--border2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: var(--text3);
+      }
+      .new-board-card:hover .new-board-icon {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .new-board-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text3);
+      }
+      .search-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg3);
+        border: 0.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0 12px;
+        height: 34px;
+      }
+      .search-wrap input {
+        font-family: var(--ff);
+        background: transparent;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        color: var(--text);
+        width: 180px;
+      }
+      .search-wrap input::placeholder {
+        color: var(--text3);
+      }
+      .tags-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .filter-tag {
+        font-family: var(--ff);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text2);
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 0.5px solid var(--border);
+        background: transparent;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .filter-tag.on {
+        background: var(--bg4);
+        color: var(--text);
+        border-color: var(--border2);
+      }
+      .modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        backdrop-filter: blur(4px);
+      }
+      .modal {
+        background: var(--bg2);
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 24px;
+        width: 420px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+      .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 18px;
+        color: var(--text);
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text3);
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .form-input {
+        font-family: var(--ff);
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        background: var(--bg3);
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius-sm);
+        color: var(--text);
+        outline: none;
+      }
+      .form-input:focus {
+        border-color: rgba(127, 119, 221, 0.5);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 18px;
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--bg3);
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius-sm);
+        padding: 12px 18px;
+        font-size: 13px;
+        color: var(--text);
+        z-index: 400;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .toast-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+    </style>
   </head>
-  <body class="page">
-    <header class="topbar">
-      <h1 class="logo">Mini Trello</h1>
-    </header>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <div class="nav-logo">flow<span>.</span>board</div>
+      <div class="nav-center">
+        <button class="nav-tab active">Tableros</button>
+        <button class="nav-tab" onclick="toast('Abre un tablero primero')">
+          Tablero
+        </button>
+        <button class="nav-tab" onclick="toast('Próximamente')">Calendario</button>
+        <button class="nav-tab" onclick="toast('Próximamente')">Analytics</button>
+      </div>
+      <div class="nav-right">
+        <div class="nav-avatars">
+          <div
+            class="av"
+            style="background:rgba(127,119,221,.3);color:#afa9ec"
+          >
+            NK
+          </div>
+        </div>
+        <button class="btn btn-ghost" type="button" onclick="toast('Próximamente')">
+          Invitar
+        </button>
+        <button class="btn btn-accent" type="button" onclick="openModal()">
+          + Nuevo tablero
+        </button>
+      </div>
+    </nav>
 
-    <main class="content">
-      <section class="panel">
-        <h2>Tableros</h2>
-        <div class="boards-list">
-          <% if (boards.length === 0) { %>
-          <p>No hay tableros aún. Crea el primero.</p>
-          <% } %>
-          <ul class="boards-grid">
-            <% boards.forEach(function (b) { %>
-            <li>
-              <div class="board-item">
-                <a href="/boards/<%= b.id %>" class="board-link"><%= b.name %></a>
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-workspace">
+          <div
+            class="ws-icon"
+            style="background:rgba(127,119,221,0.2);color:#afa9ec"
+          >
+            NK
+          </div>
+          <div class="ws-info">
+            <div class="ws-name">Workspace</div>
+            <div class="ws-plan">Mini Trello</div>
+          </div>
+          <div class="ws-chevron">▾</div>
+        </div>
+
+        <div class="sidebar-item active">
+          <span class="icon">⊞</span> Tableros
+        </div>
+        <div class="sidebar-item" onclick="toast('Próximamente')">
+          <span class="icon">★</span> Destacados
+          <span class="badge"><%= boards.length %></span>
+        </div>
+        <div class="sidebar-item" onclick="toast('Próximamente')">
+          <span class="icon">🕐</span> Recientes
+        </div>
+
+        <div class="sidebar-section">Mis tableros</div>
+        <div id="sidebar-boards">
+          <% boards.forEach(function (b) { %>
+          <div
+            class="sidebar-item"
+            onclick="window.location.href='/boards/<%= b.id %>'"
+          >
+            <span class="icon">▣</span>
+            <span><%= b.name %></span>
+          </div>
+          <% }) %>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main">
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-left">
+            <div class="hero-greeting">Bienvenido a Mini Trello</div>
+            <div class="hero-title">Tus tableros de proyecto</div>
+            <div class="hero-sub">
+              Crea, organiza y prioriza todos tus tableros desde un solo
+              lugar.
+            </div>
+          </div>
+          <div class="hero-right">
+            <button
+              class="btn btn-ghost"
+              type="button"
+              onclick="toast('Próximamente')"
+            >
+              Ver plantillas
+            </button>
+            <button class="btn btn-accent" type="button" onclick="openModal()">
+              + Nuevo tablero
+            </button>
+          </div>
+        </div>
+
+        <!-- TAGS (filtro simple) -->
+        <div class="tags-row">
+          <button
+            class="filter-tag on"
+            type="button"
+            onclick="filterBoards('')"
+          >
+            Todos
+          </button>
+        </div>
+
+        <!-- LISTA DE TABLEROS -->
+        <div class="section-header">
+          <span class="section-title" id="all-title">Todos los tableros</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="search-wrap">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <circle
+                  cx="6.5"
+                  cy="6.5"
+                  r="5"
+                  stroke="#5c5c6e"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M10.5 10.5L14 14"
+                  stroke="#5c5c6e"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar tablero..."
+                oninput="filterBoards(this.value)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="boards-grid" id="boards-grid">
+          <% boards.forEach(function (b) { %>
+          <a
+            href="/boards/<%= b.id %>"
+            class="board-card"
+            data-name="<%= b.name.toLowerCase() %>"
+          >
+            <div class="board-thumb">
+              <div class="board-mini-cols">
+                <div class="mini-col">
+                  <div class="mini-card accent"></div>
+                  <div class="mini-card"></div>
+                  <div class="mini-card"></div>
+                </div>
+                <div class="mini-col">
+                  <div class="mini-card"></div>
+                  <div class="mini-card accent"></div>
+                </div>
+                <div class="mini-col">
+                  <div class="mini-card"></div>
+                  <div class="mini-card"></div>
+                  <div class="mini-card accent"></div>
+                </div>
+              </div>
+            </div>
+            <div class="board-info">
+              <div class="board-name"><%= b.name %></div>
+              <div class="board-meta">
+                <div class="board-meta-left">
+                  <div class="board-tag">
+                    <%= (b.description || 'Tablero').slice(0, 18) %>
+                  </div>
+                </div>
                 <form
                   method="POST"
                   action="/boards/<%= b.id %>/delete"
-                  class="inline-form"
                   onsubmit="return confirm('¿Eliminar este tablero y todo su contenido?');"
                 >
-                  <button type="submit" class="btn-danger btn-small">Eliminar</button>
+                  <button
+                    type="submit"
+                    class="btn btn-ghost"
+                    style="padding:2px 10px;font-size:11px"
+                    onclick="event.stopPropagation()"
+                  >
+                    Eliminar
+                  </button>
                 </form>
               </div>
-            </li>
-            <% }) %>
-          </ul>
-        </div>
+            </div>
+          </a>
+          <% }) %>
 
-        <form class="form-inline" method="POST" action="/boards">
-          <input
-            type="text"
-            name="name"
-            placeholder="Nombre del tablero"
-            required
-          />
-          <input
-            type="text"
-            name="description"
-            placeholder="Descripción corta (opcional)"
-          />
-          <button type="submit">Crear tablero</button>
+          <!-- Tarjeta para crear tablero -->
+          <button
+            type="button"
+            class="new-board-card"
+            onclick="openModal()"
+          >
+            <div class="new-board-icon">＋</div>
+            <div class="new-board-label">Crear nuevo tablero</div>
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODAL CREAR TABLERO -->
+    <div
+      class="modal-bg"
+      id="modal"
+      onclick="if(event.target===this)closeModal()"
+    >
+      <div class="modal">
+        <div class="modal-title">Crear nuevo tablero</div>
+        <form id="create-board-form" method="POST" action="/boards">
+          <div class="form-group">
+            <label class="form-label">Nombre del tablero</label>
+            <input
+              class="form-input"
+              id="f-name"
+              name="name"
+              type="text"
+              placeholder="Ej: Lanzamiento Q2, Rediseño web..."
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input
+              class="form-input"
+              name="description"
+              type="text"
+              placeholder="Descripción corta (opcional)"
+            />
+          </div>
+          <div class="modal-actions">
+            <button
+              class="btn btn-ghost"
+              type="button"
+              onclick="closeModal()"
+            >
+              Cancelar
+            </button>
+            <button class="btn btn-accent" type="submit">Crear tablero</button>
+          </div>
         </form>
-      </section>
-    </main>
+      </div>
+    </div>
+
+    <script>
+      function openModal() {
+        document.getElementById('modal').style.display = 'flex';
+        const input = document.getElementById('f-name');
+        if (input) setTimeout(() => input.focus(), 50);
+      }
+      function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+      }
+      function toast(msg) {
+        let t = document.querySelector('.toast');
+        if (t) t.remove();
+        t = document.createElement('div');
+        t.className = 'toast';
+        t.innerHTML =
+          '<div class="toast-dot"></div>' + String(msg || 'Acción no disponible');
+        document.body.appendChild(t);
+        setTimeout(() => t && t.remove(), 2200);
+      }
+      function filterBoards(q) {
+        const term = (q || '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.board-card[data-name]');
+        cards.forEach((c) => {
+          const name = c.getAttribute('data-name') || '';
+          c.style.display = !term || name.includes(term) ? '' : 'none';
+        });
+      }
+    </script>
   </body>
 </html>
-
