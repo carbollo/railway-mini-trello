@@ -58,6 +58,24 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS labels TEXT,
     ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE;
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS card_comments (
+      id SERIAL PRIMARY KEY,
+      card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS card_checklists (
+      id SERIAL PRIMARY KEY,
+      card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      is_done BOOLEAN NOT NULL DEFAULT FALSE
+    );
+  `);
 }
 
 // Página principal: listado de tableros
@@ -110,17 +128,44 @@ app.get('/boards/:id', async (req, res) => {
     );
 
     const { rows: cards } = await pool.query(
-      'SELECT * FROM cards WHERE list_id IN (SELECT id FROM lists WHERE board_id = $1) ORDER BY position ASC, id ASC',
+      'SELECT * FROM cards WHERE is_archived = FALSE AND list_id IN (SELECT id FROM lists WHERE board_id = $1) ORDER BY position ASC, id ASC',
       [boardId]
     );
 
     const cardsByList = {};
+    const cardIds = [];
     for (const card of cards) {
+      cardIds.push(card.id);
       if (!cardsByList[card.list_id]) cardsByList[card.list_id] = [];
       cardsByList[card.list_id].push(card);
     }
 
-    res.render('board', { board, lists, cardsByList });
+    let commentsByCard = {};
+    let checklistsByCard = {};
+
+    if (cardIds.length > 0) {
+      const { rows: comments } = await pool.query(
+        'SELECT * FROM card_comments WHERE card_id = ANY($1::int[]) ORDER BY created_at ASC',
+        [cardIds]
+      );
+      commentsByCard = comments.reduce((acc, c) => {
+        if (!acc[c.card_id]) acc[c.card_id] = [];
+        acc[c.card_id].push(c);
+        return acc;
+      }, {});
+
+      const { rows: checklistItems } = await pool.query(
+        'SELECT * FROM card_checklists WHERE card_id = ANY($1::int[]) ORDER BY id ASC',
+        [cardIds]
+      );
+      checklistsByCard = checklistItems.reduce((acc, item) => {
+        if (!acc[item.card_id]) acc[item.card_id] = [];
+        acc[item.card_id].push(item);
+        return acc;
+      }, {});
+    }
+
+    res.render('board', { board, lists, cardsByList, commentsByCard, checklistsByCard });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error cargando tablero');
@@ -228,6 +273,73 @@ app.post('/lists/:id/delete', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error eliminando lista');
+  }
+});
+
+// Añadir comentario a una tarjeta
+app.post('/cards/:id/comments', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId, content } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  if (!content) return res.redirect(`/boards/${boardId}`);
+  try {
+    await pool.query('INSERT INTO card_comments (card_id, content) VALUES ($1, $2)', [
+      cardId,
+      content,
+    ]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error añadiendo comentario');
+  }
+});
+
+// Añadir ítem de checklist a una tarjeta
+app.post('/cards/:id/checklists', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId, title } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  if (!title) return res.redirect(`/boards/${boardId}`);
+  try {
+    await pool.query('INSERT INTO card_checklists (card_id, title) VALUES ($1, $2)', [
+      cardId,
+      title,
+    ]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error añadiendo elemento de checklist');
+  }
+});
+
+// Alternar estado de un ítem de checklist
+app.post('/checklists/:id/toggle', async (req, res) => {
+  const itemId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query(
+      'UPDATE card_checklists SET is_done = NOT is_done WHERE id = $1',
+      [itemId]
+    );
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando checklist');
+  }
+});
+
+// Eliminar un ítem de checklist
+app.post('/checklists/:id/delete', async (req, res) => {
+  const itemId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('DELETE FROM card_checklists WHERE id = $1', [itemId]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando checklist');
   }
 });
 

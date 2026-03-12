@@ -88,6 +88,8 @@ La primera vez que arranca, la app crea automáticamente las tablas `boards`, `l
 - **Archivar** tarjetas (dejan de mostrarse en el tablero).
 - **Eliminar** tarjetas definitivamente.
 - **Drag & drop** entre listas y reordenación interna de tarjetas dentro de cada lista.
+- **Comentarios por tarjeta** (historial de notas).
+- **Checklist por tarjeta** (lista de tareas con marca de completado).
 
 ## 5. Posibles extensiones
 

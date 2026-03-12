@@ -48,6 +48,16 @@
                     <%= new Date(card.due_date).toISOString().slice(0, 10) %></span
                   >
                   <% } %>
+                  <% const comments = (commentsByCard && commentsByCard[card.id]) || []; %>
+                  <% if (comments.length > 0) { %>
+                  <span class="card-comments-pill"><%= comments.length %> comentario(s)</span>
+                  <% } %>
+                  <% const checklistItems = (checklistsByCard && checklistsByCard[card.id]) || []; %>
+                  <% if (checklistItems.length > 0) { %>
+                  <span class="card-checklist-pill">
+                    Checklist <%= checklistItems.filter(i => i.is_done).length %>/<%= checklistItems.length %>
+                  </span>
+                  <% } %>
                 </div>
               </div>
               <div class="card-actions">
@@ -113,6 +123,82 @@
                 </label>
                 <button type="submit" class="btn-small">Guardar cambios</button>
               </form>
+
+              <div class="card-extra">
+                <div class="card-checklist">
+                  <h4>Checklist</h4>
+                  <ul>
+                    <% const checklistItems2 = (checklistsByCard && checklistsByCard[card.id]) || []; %>
+                    <% checklistItems2.forEach(function (item) { %>
+                    <li class="<%= item.is_done ? 'checklist-done' : '' %>">
+                      <form
+                        method="POST"
+                        action="/checklists/<%= item.id %>/toggle"
+                        class="inline-form"
+                      >
+                        <input type="hidden" name="boardId" value="<%= board.id %>" />
+                        <button type="submit" class="checkbox-btn">
+                          <%= item.is_done ? '☑' : '☐' %>
+                        </button>
+                      </form>
+                      <span><%= item.title %></span>
+                      <form
+                        method="POST"
+                        action="/checklists/<%= item.id %>/delete"
+                        class="inline-form"
+                      >
+                        <input type="hidden" name="boardId" value="<%= board.id %>" />
+                        <button type="submit" class="btn-icon">×</button>
+                      </form>
+                    </li>
+                    <% }) %>
+                  </ul>
+                  <form
+                    method="POST"
+                    action="/cards/<%= card.id %>/checklists"
+                    class="inline-form checklist-add-form"
+                  >
+                    <input type="hidden" name="boardId" value="<%= board.id %>" />
+                    <input
+                      type="text"
+                      name="title"
+                      placeholder="Nuevo elemento de checklist"
+                    />
+                    <button type="submit" class="btn-small">Añadir</button>
+                  </form>
+                </div>
+
+                <div class="card-comments">
+                  <h4>Comentarios</h4>
+                  <div class="comments-list">
+                    <% const comments2 = (commentsByCard && commentsByCard[card.id]) || []; %>
+                    <% comments2.forEach(function (c) { %>
+                    <div class="comment">
+                      <div class="comment-content"><%= c.content %></div>
+                      <div class="comment-meta">
+                        <%= new Date(c.created_at).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %>
+                      </div>
+                    </div>
+                    <% }) %>
+                    <% if (comments2.length === 0) { %>
+                    <p class="comment-empty">Sin comentarios todavía.</p>
+                    <% } %>
+                  </div>
+                  <form
+                    method="POST"
+                    action="/cards/<%= card.id %>/comments"
+                    class="comment-form"
+                  >
+                    <input type="hidden" name="boardId" value="<%= board.id %>" />
+                    <textarea
+                      name="content"
+                      placeholder="Escribe un comentario..."
+                      required
+                    ></textarea>
+                    <button type="submit" class="btn-small">Comentar</button>
+                  </form>
+                </div>
+              </div>
             </article>
             <% }) %>
           </div>
