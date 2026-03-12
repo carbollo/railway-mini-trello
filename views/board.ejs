@@ -120,13 +120,22 @@
             <% const total = items.length; %>
             <% const labelText = (card.labels || '').trim() || 'Tarea'; %>
             <% const labelLower = labelText.toLowerCase(); %>
-            <% let tagClass = 'tag-purple'; %>
-            <% if (labelLower.includes('dise')) { tagClass = 'tag-blue'; } %>
-            <% else if (labelLower.includes('dev') || labelLower.includes('desarrollo')) { tagClass = 'tag-teal'; } %>
-            <% else if (labelLower.includes('marketing')) { tagClass = 'tag-amber'; } %>
-            <% else if (labelLower.includes('bug') || labelLower.includes('error')) { tagClass = 'tag-coral'; } %>
-            <% else if (labelLower.includes('qa') || labelLower.includes('test')) { tagClass = 'tag-green'; } %>
-            <% else if (labelLower.includes('ux')) { tagClass = 'tag-pink'; } %>
+            <% 
+              let tagClass = 'tag-purple';
+              if (labelLower.includes('dise')) {
+                tagClass = 'tag-blue';
+              } else if (labelLower.includes('dev') || labelLower.includes('desarrollo')) {
+                tagClass = 'tag-teal';
+              } else if (labelLower.includes('marketing')) {
+                tagClass = 'tag-amber';
+              } else if (labelLower.includes('bug') || labelLower.includes('error')) {
+                tagClass = 'tag-coral';
+              } else if (labelLower.includes('qa') || labelLower.includes('test')) {
+                tagClass = 'tag-green';
+              } else if (labelLower.includes('ux')) {
+                tagClass = 'tag-pink';
+              }
+            %>
 
             <div
               class="card"
