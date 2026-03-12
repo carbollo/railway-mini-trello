@@ -106,6 +106,33 @@ app.get('/', async (req, res) => {
   }
 });
 
+// Vista sencilla de analytics globales
+app.get('/analytics', async (req, res) => {
+  try {
+    const { rows: boardRows } = await pool.query(
+      'SELECT COUNT(*)::int AS total, SUM(CASE WHEN is_starred THEN 1 ELSE 0 END)::int AS starred FROM boards'
+    );
+    const { rows: listRows } = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM lists'
+    );
+    const { rows: cardRows } = await pool.query(
+      `SELECT
+         COUNT(*)::int AS total,
+         SUM(CASE WHEN is_done THEN 1 ELSE 0 END)::int AS done,
+         SUM(CASE WHEN is_archived THEN 1 ELSE 0 END)::int AS archived
+       FROM cards`
+    );
+    res.render('analytics', {
+      boardsStats: boardRows[0],
+      listsStats: listRows[0],
+      cardsStats: cardRows[0],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error cargando analytics');
+  }
+});
+
 // Eliminar tablero (y en cascada sus listas y tarjetas)
 app.post('/boards/:id/delete', async (req, res) => {
   const boardId = req.params.id;
