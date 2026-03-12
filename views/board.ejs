@@ -15,7 +15,17 @@
       <section class="lists">
         <% lists.forEach(function (list) { %>
         <div class="list-column" data-list-id="<%= list.id %>">
-          <h2><%= list.name %></h2>
+          <div class="list-header">
+            <h2><%= list.name %></h2>
+            <form
+              method="POST"
+              action="/lists/<%= list.id %>/delete"
+              onsubmit="return confirm('¿Eliminar esta lista y todas sus tarjetas?');"
+            >
+              <input type="hidden" name="boardId" value="<%= board.id %>" />
+              <button type="submit" class="btn-icon" title="Eliminar lista">×</button>
+            </form>
+          </div>
           <div class="cards" data-list-id="<%= list.id %>">
             <% (cardsByList[list.id] || []).forEach(function (card) { %>
             <article
@@ -23,10 +33,86 @@
               draggable="true"
               data-card-id="<%= card.id %>"
             >
-              <h3><%= card.title %></h3>
-              <% if (card.description) { %>
-              <p><%= card.description %></p>
-              <% } %>
+              <div class="card-main">
+                <h3><%= card.title %></h3>
+                <% if (card.description) { %>
+                <p><%= card.description %></p>
+                <% } %>
+                <div class="card-meta">
+                  <% if (card.labels) { %>
+                  <span class="card-labels"><%= card.labels %></span>
+                  <% } %>
+                  <% if (card.due_date) { %>
+                  <span class="card-due"
+                    >Vence:
+                    <%= new Date(card.due_date).toISOString().slice(0, 10) %></span
+                  >
+                  <% } %>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button
+                  type="button"
+                  class="btn-small"
+                  data-action="toggle-edit"
+                  data-card-id="<%= card.id %>"
+                >
+                  Editar
+                </button>
+                <form
+                  method="POST"
+                  action="/cards/<%= card.id %>/archive"
+                  onsubmit="return confirm('¿Archivar esta tarjeta?');"
+                >
+                  <input type="hidden" name="boardId" value="<%= board.id %>" />
+                  <button type="submit" class="btn-small">Archivar</button>
+                </form>
+                <form
+                  method="POST"
+                  action="/cards/<%= card.id %>/delete"
+                  onsubmit="return confirm('¿Eliminar esta tarjeta definitivamente?');"
+                >
+                  <input type="hidden" name="boardId" value="<%= board.id %>" />
+                  <button type="submit" class="btn-danger btn-small">Eliminar</button>
+                </form>
+              </div>
+              <form
+                class="card-edit-form hidden"
+                method="POST"
+                action="/cards/<%= card.id %>/update"
+              >
+                <input type="hidden" name="boardId" value="<%= board.id %>" />
+                <input type="hidden" name="listId" value="<%= list.id %>" />
+                <label>
+                  Título
+                  <input type="text" name="title" value="<%= card.title %>" required />
+                </label>
+                <label>
+                  Descripción
+                  <textarea
+                    name="description"
+                    placeholder="Descripción"
+                  ><%= card.description || '' %></textarea>
+                </label>
+                <label>
+                  Etiquetas (separadas por comas)
+                  <input
+                    type="text"
+                    name="labels"
+                    value="<%= card.labels || '' %>"
+                    placeholder="bug, urgente, mejora"
+                  />
+                </label>
+                <label>
+                  Fecha de vencimiento
+                  <input
+                    type="date"
+                    name="due_date"
+                    value="<%= card.due_date ? new Date(card.due_date).toISOString().slice(0, 10) : '' %>"
+                  />
+                </label>
+                <button type="submit" class="btn-small">Guardar cambios</button>
+              </form>
             </article>
             <% }) %>
           </div>
@@ -46,6 +132,12 @@
               name="description"
               placeholder="Descripción (opcional)"
             ></textarea>
+            <input
+              type="text"
+              name="labels"
+              placeholder="Etiquetas (opcional, separadas por comas)"
+            />
+            <input type="date" name="due_date" />
             <button type="submit">Añadir tarjeta</button>
           </form>
         </div>
@@ -97,6 +189,7 @@
         cardsContainer.appendChild(draggedCard);
 
         try {
+          // Primero movemos la tarjeta a la lista nueva
           await fetch('/cards/' + cardId + '/move', {
             method: 'POST',
             headers: {
@@ -106,11 +199,36 @@
               targetListId: listId,
             }),
           });
+
+          // Luego enviamos el nuevo orden de tarjetas en esa lista
+          const ids = Array.from(
+            cardsContainer.querySelectorAll('.card[data-card-id]')
+          ).map((el) => el.getAttribute('data-card-id'));
+
+          await fetch('/lists/' + listId + '/reorder', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cardIds: ids }),
+          });
         } catch (err) {
           console.error('Error moviendo tarjeta', err);
         } finally {
           draggedCard = null;
         }
+      });
+
+      // Mostrar / ocultar formulario de edición de tarjeta
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="toggle-edit"]');
+        if (!btn) return;
+        const cardId = btn.getAttribute('data-card-id');
+        const cardEl = document.querySelector('.card[data-card-id="' + cardId + '"]');
+        if (!cardEl) return;
+        const form = cardEl.querySelector('.card-edit-form');
+        if (!form) return;
+        form.classList.toggle('hidden');
       });
     </script>
   </body>

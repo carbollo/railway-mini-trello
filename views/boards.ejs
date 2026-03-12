@@ -17,10 +17,20 @@
           <% if (boards.length === 0) { %>
           <p>No hay tableros aún. Crea el primero.</p>
           <% } %>
-          <ul>
+          <ul class="boards-grid">
             <% boards.forEach(function (b) { %>
             <li>
-              <a href="/boards/<%= b.id %>" class="board-link"><%= b.name %></a>
+              <div class="board-item">
+                <a href="/boards/<%= b.id %>" class="board-link"><%= b.name %></a>
+                <form
+                  method="POST"
+                  action="/boards/<%= b.id %>/delete"
+                  class="inline-form"
+                  onsubmit="return confirm('¿Eliminar este tablero y todo su contenido?');"
+                >
+                  <button type="submit" class="btn-danger btn-small">Eliminar</button>
+                </form>
+              </div>
             </li>
             <% }) %>
           </ul>

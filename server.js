@@ -44,8 +44,19 @@ async function ensureSchema() {
       list_id INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
       description TEXT,
-      position INTEGER NOT NULL DEFAULT 0
+      position INTEGER NOT NULL DEFAULT 0,
+      due_date DATE,
+      labels TEXT,
+      is_archived BOOLEAN NOT NULL DEFAULT FALSE
     );
+  `);
+
+  // Asegura columnas nuevas si la tabla ya existía con un esquema antiguo
+  await pool.query(`
+    ALTER TABLE cards
+    ADD COLUMN IF NOT EXISTS due_date DATE,
+    ADD COLUMN IF NOT EXISTS labels TEXT,
+    ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE;
   `);
 }
 
@@ -57,6 +68,18 @@ app.get('/', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error cargando tableros');
+  }
+});
+
+// Eliminar tablero (y en cascada sus listas y tarjetas)
+app.post('/boards/:id/delete', async (req, res) => {
+  const boardId = req.params.id;
+  try {
+    await pool.query('DELETE FROM boards WHERE id = $1', [boardId]);
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando tablero');
   }
 });
 
@@ -129,7 +152,7 @@ app.post('/boards/:id/lists', async (req, res) => {
 // Crear tarjeta en una lista
 app.post('/lists/:id/cards', async (req, res) => {
   const listId = req.params.id;
-  const { title, description, boardId } = req.body;
+  const { title, description, boardId, labels, due_date } = req.body;
   if (!title) return res.redirect(`/boards/${boardId}`);
   try {
     const { rows: posRows } = await pool.query(
@@ -138,13 +161,95 @@ app.post('/lists/:id/cards', async (req, res) => {
     );
     const nextPos = posRows[0].next_pos || 0;
     await pool.query(
-      'INSERT INTO cards (list_id, title, description, position) VALUES ($1, $2, $3, $4)',
-      [listId, title, description || '', nextPos]
+      'INSERT INTO cards (list_id, title, description, position, labels, due_date) VALUES ($1, $2, $3, $4, $5, $6)',
+      [listId, title, description || '', nextPos, labels || null, due_date || null]
     );
     res.redirect(`/boards/${boardId}`);
   } catch (err) {
     console.error(err);
     res.status(500).send('Error creando tarjeta');
+  }
+});
+
+// Actualizar tarjeta (título, descripción, etiquetas, fecha de vencimiento)
+app.post('/cards/:id/update', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId, listId, title, description, labels, due_date } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  if (!title) return res.redirect(`/boards/${boardId}`);
+  try {
+    await pool.query(
+      'UPDATE cards SET title = $1, description = $2, labels = $3, due_date = $4, list_id = $5 WHERE id = $6',
+      [title, description || '', labels || null, due_date || null, listId, cardId]
+    );
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando tarjeta');
+  }
+});
+
+// Eliminar tarjeta
+app.post('/cards/:id/delete', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('DELETE FROM cards WHERE id = $1', [cardId]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando tarjeta');
+  }
+});
+
+// Archivar tarjeta (no se muestra en el tablero)
+app.post('/cards/:id/archive', async (req, res) => {
+  const cardId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('UPDATE cards SET is_archived = TRUE WHERE id = $1', [cardId]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error archivando tarjeta');
+  }
+});
+
+// Eliminar lista completa
+app.post('/lists/:id/delete', async (req, res) => {
+  const listId = req.params.id;
+  const { boardId } = req.body;
+  if (!boardId) return res.status(400).send('boardId requerido');
+  try {
+    await pool.query('DELETE FROM lists WHERE id = $1', [listId]);
+    res.redirect(`/boards/${boardId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando lista');
+  }
+});
+
+// Reordenar tarjetas dentro de una lista
+app.post('/lists/:id/reorder', async (req, res) => {
+  const listId = req.params.id;
+  const { cardIds } = req.body;
+  if (!Array.isArray(cardIds)) {
+    return res.status(400).json({ error: 'cardIds debe ser un array' });
+  }
+  try {
+    for (let index = 0; index < cardIds.length; index += 1) {
+      const cardId = cardIds[index];
+      await pool.query(
+        'UPDATE cards SET position = $1 WHERE id = $2 AND list_id = $3',
+        [index, cardId, listId]
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error reordenando tarjetas' });
   }
 });
 

@@ -75,15 +75,23 @@ La primera vez que arranca, la app crea automáticamente las tablas `boards`, `l
 - `public/css/styles.css`: estilos de la interfaz tipo Trello.
 - `.env.example`: plantilla de variables de entorno.
 
-## 4. Limitaciones y posibles mejoras
+## 4. Funciones tipo Trello incluidas
 
-- No hay autenticación de usuarios (todos comparten los mismos tableros).
-- No hay gestión fina del orden de tarjetas (solo se las coloca al final de la lista).
-- No hay archivado/eliminación de tarjetas ni listas.
+- Crear y **eliminar tableros completos**.
+- Crear y **eliminar listas** dentro de un tablero.
+- Crear tarjetas con:
+  - Título
+  - Descripción
+  - **Etiquetas** (texto separado por comas)
+  - **Fecha de vencimiento**
+- **Editar** tarjetas (todos los campos anteriores).
+- **Archivar** tarjetas (dejan de mostrarse en el tablero).
+- **Eliminar** tarjetas definitivamente.
+- **Drag & drop** entre listas y reordenación interna de tarjetas dentro de cada lista.
 
-Sugerencias de mejora:
+## 5. Posibles extensiones
 
-- Añadir login/registro y asociar tableros a usuarios.
-- Mejorar drag & drop para reordenar tarjetas dentro de la misma lista.
-- Añadir edición/eliminación de tableros, listas y tarjetas.
+- Añadir autenticación de usuarios y tableros privados.
+- Añadir vistas de calendario para fechas de vencimiento.
+- Implementar comentarios en tarjetas.
 
