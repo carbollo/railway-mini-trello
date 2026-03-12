@@ -6,56 +6,59 @@
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body class="page">
-    <header class="topbar">
-      <a href="/" class="back-link">&larr; Tableros</a>
-      <h1 class="logo"><%= board.name %></h1>
-      <nav class="board-nav">
-        <a href="/boards/<%= board.id %>" class="nav-link">Tablero</a>
-        <a href="/boards/<%= board.id %>/calendar" class="nav-link">Calendario</a>
-        <a href="/boards/<%= board.id %>/archive" class="nav-link">Archivadas</a>
-      </nav>
-    </header>
+    <!-- NAV del tablero basado en trello-board.html -->
+    <nav>
+      <div class="nav-logo">flow<span>.</span>board</div>
+      <div class="nav-center">
+        <a href="/boards/<%= board.id %>" class="nav-tab active">Tablero</a>
+        <a href="/boards/<%= board.id %>/calendar" class="nav-tab">Calendario</a>
+        <a href="/boards/<%= board.id %>/archive" class="nav-tab">Archivadas</a>
+      </div>
+      <div class="nav-right">
+        <div class="nav-avatars">
+          <div class="nav-av" style="background:rgba(127,119,221,.3);color:#afa9ec">NK</div>
+        </div>
+        <a href="/" class="btn btn-ghost">Tableros</a>
+        <button class="btn btn-accent" type="button">+ Crear</button>
+      </div>
+    </nav>
 
-    <main class="board">
-      <section class="board-header">
-        <div class="board-description">
+    <!-- TOOLBAR superior del tablero -->
+    <div class="toolbar">
+      <div class="board-title-wrap">
+        <div class="board-title"><%= board.name %></div>
+        <div class="board-badge">
           <% if (board.description) { %>
-          <p><%= board.description %></p>
+          <%= board.description %>
           <% } else { %>
-          <p class="board-description-empty">
-            Añade una descripción para este tablero (contexto, objetivos, etc.).
-          </p>
+          Tablero
           <% } %>
         </div>
-        <form
-          class="board-edit-form"
-          method="POST"
-          action="/boards/<%= board.id %>/update"
-        >
-          <input
-            type="text"
-            name="name"
-            value="<%= board.name %>"
-            required
-          />
-          <input
-            type="text"
-            name="description"
-            value="<%= board.description || '' %>"
-            placeholder="Descripción del tablero"
-          />
-          <button type="submit" class="btn-small">Actualizar tablero</button>
-        </form>
-
-        <div class="board-filter">
+      </div>
+      <div class="toolbar-right">
+        <div class="search-wrap">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="#5c5c6e" stroke-width="1.5" />
+            <path
+              d="M10.5 10.5L14 14"
+              stroke="#5c5c6e"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
           <input
             type="text"
             id="card-filter"
-            placeholder="Filtrar tarjetas por título o etiqueta..."
+            placeholder="Buscar tarjeta..."
           />
         </div>
-      </section>
+        <div class="icon-btn" title="Filtrar">⚡</div>
+        <div class="icon-btn" title="Vista">⊞</div>
+      </div>
+    </div>
 
+    <!-- Área de tablero estilo trello-board.html -->
+    <div class="board-wrap">
       <% if (archivedCards && archivedCards.length > 0) { %>
       <section class="archived-section">
         <h2>Tarjetas archivadas</h2>
@@ -85,242 +88,159 @@
       </section>
       <% } %>
 
-      <section class="lists">
-        <% lists.forEach(function (list, listIndex) { %>
-        <div class="list-column" data-list-id="<%= list.id %>">
-          <div class="list-header">
-            <h2><%= list.name %></h2>
-            <span class="list-count">
-              <%= (cardsByList[list.id] || []).length %>
-            </span>
+      <div class="board-scroll" id="board">
+        <% lists.forEach(function (list, ci) { %>
+        <% const cardsForList = (cardsByList[list.id] || []); %>
+        <% const checklistDoneCount = function(cardId) {
+             const items = (checklistsByCard && checklistsByCard[cardId]) || [];
+             return items.filter(i => i.is_done).length;
+           }; %>
+        <% const checklistTotalCount = function(cardId) {
+             const items = (checklistsByCard && checklistsByCard[cardId]) || [];
+             return items.length;
+           }; %>
+
+        <div class="col" data-list-id="<%= list.id %>">
+          <div class="col-header">
+            <div class="col-dot"></div>
+            <span class="col-name"><%= list.name %></span>
+            <span class="col-count"><%= cardsForList.length %></span>
             <form
               method="POST"
               action="/lists/<%= list.id %>/delete"
               onsubmit="return confirm('¿Eliminar esta lista y todas sus tarjetas?');"
             >
               <input type="hidden" name="boardId" value="<%= board.id %>" />
-              <button type="submit" class="btn-icon" title="Eliminar lista">×</button>
+              <button type="button" class="col-options" onclick="this.closest('form').submit()">⋯</button>
             </form>
           </div>
-          <div class="cards" data-list-id="<%= list.id %>">
-            <% (cardsByList[list.id] || []).forEach(function (card) { %>
-            <article
+          <div class="col-progress">
+            <% const doneCards = cardsForList.filter(function (c) { return checklistTotalCount(c.id) > 0 && checklistDoneCount(c.id) === checklistTotalCount(c.id); }); %>
+            <% const pct = cardsForList.length ? Math.round(doneCards.length / cardsForList.length * 100) : 0; %>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:<%= pct %>%"></div>
+            </div>
+          </div>
+
+          <div class="col-cards" data-list-id="<%= list.id %>">
+            <% cardsForList.forEach(function (card) { %>
+            <% const items = (checklistsByCard && checklistsByCard[card.id]) || []; %>
+            <% const done = items.filter(i => i.is_done).length; %>
+            <% const total = items.length; %>
+            <% const labelText = (card.labels || '').trim() || 'Tarea'; %>
+            <% const labelLower = labelText.toLowerCase(); %>
+            <% let tagClass = 'tag-purple'; %>
+            <% if (labelLower.includes('dise')) { tagClass = 'tag-blue'; } %>
+            <% else if (labelLower.includes('dev') || labelLower.includes('desarrollo')) { tagClass = 'tag-teal'; } %>
+            <% else if (labelLower.includes('marketing')) { tagClass = 'tag-amber'; } %>
+            <% else if (labelLower.includes('bug') || labelLower.includes('error')) { tagClass = 'tag-coral'; } %>
+            <% else if (labelLower.includes('qa') || labelLower.includes('test')) { tagClass = 'tag-green'; } %>
+            <% else if (labelLower.includes('ux')) { tagClass = 'tag-pink'; } %>
+
+            <div
               class="card"
               draggable="true"
               data-card-id="<%= card.id %>"
               data-title="<%= card.title.toLowerCase() %>"
               data-labels="<%= (card.labels || '').toLowerCase() %>"
             >
-              <div class="card-main">
-                <h3><%= card.title %></h3>
-                <% if (card.description) { %>
-                <p><%= card.description %></p>
-                <% } %>
+              <div class="card-tags">
+                <span class="tag <%= tagClass %>"><%= labelText %></span>
+              </div>
+              <div class="card-title"><%= card.title %></div>
+              <div class="card-footer">
                 <div class="card-meta">
-                  <% if (card.labels) { %>
-                  <span class="card-labels"><%= card.labels %></span>
-                  <% } %>
                   <% if (card.due_date) { %>
-                  <span class="card-due"
-                    >Vence:
-                    <%= new Date(card.due_date).toISOString().slice(0, 10) %></span
-                  >
+                  <% const dateStr = new Date(card.due_date).toISOString().slice(0, 10); %>
+                  <span class="card-date"><%= dateStr %></span>
                   <% } %>
-                  <% const comments = (commentsByCard && commentsByCard[card.id]) || []; %>
-                  <% if (comments.length > 0) { %>
-                  <span class="card-comments-pill"><%= comments.length %> comentario(s)</span>
-                  <% } %>
-                  <% const checklistItems = (checklistsByCard && checklistsByCard[card.id]) || []; %>
-                  <% if (checklistItems.length > 0) { %>
-                  <span class="card-checklist-pill">
-                    Checklist <%= checklistItems.filter(i => i.is_done).length %>/<%= checklistItems.length %>
+                  <% if (total > 0) { %>
+                  <span class="card-checks <%= done === total ? 'all-done' : '' %>">
+                    ✓ <%= done %>/<%= total %>
                   </span>
                   <% } %>
                 </div>
               </div>
-              <div class="card-actions">
-                <button
-                  type="button"
-                  class="btn-small"
-                  data-action="toggle-edit"
-                  data-card-id="<%= card.id %>"
-                >
-                  Editar
-                </button>
-                <form
-                  method="POST"
-                  action="/cards/<%= card.id %>/archive"
-                  onsubmit="return confirm('¿Archivar esta tarjeta?');"
-                >
-                  <input type="hidden" name="boardId" value="<%= board.id %>" />
-                  <button type="submit" class="btn-small">Archivar</button>
-                </form>
-                <form
-                  method="POST"
-                  action="/cards/<%= card.id %>/delete"
-                  onsubmit="return confirm('¿Eliminar esta tarjeta definitivamente?');"
-                >
-                  <input type="hidden" name="boardId" value="<%= board.id %>" />
-                  <button type="submit" class="btn-danger btn-small">Eliminar</button>
-                </form>
-              </div>
-              <form
-                class="card-edit-form hidden"
-                method="POST"
-                action="/cards/<%= card.id %>/update"
-              >
-                <input type="hidden" name="boardId" value="<%= board.id %>" />
-                <input type="hidden" name="listId" value="<%= list.id %>" />
-                <label>
-                  Título
-                  <input type="text" name="title" value="<%= card.title %>" required />
-                </label>
-                <label>
-                  Descripción
-                  <textarea
-                    name="description"
-                    placeholder="Descripción"
-                  ><%= card.description || '' %></textarea>
-                </label>
-                <label>
-                  Etiquetas (separadas por comas)
-                  <input
-                    type="text"
-                    name="labels"
-                    value="<%= card.labels || '' %>"
-                    placeholder="bug, urgente, mejora"
-                  />
-                </label>
-                <label>
-                  Fecha de vencimiento
-                  <input
-                    type="date"
-                    name="due_date"
-                    value="<%= card.due_date ? new Date(card.due_date).toISOString().slice(0, 10) : '' %>"
-                  />
-                </label>
-                <button type="submit" class="btn-small">Guardar cambios</button>
-              </form>
-
-              <div class="card-extra">
-                <div class="card-checklist">
-                  <h4>Checklist</h4>
-                  <ul>
-                    <% const checklistItems2 = (checklistsByCard && checklistsByCard[card.id]) || []; %>
-                    <% checklistItems2.forEach(function (item) { %>
-                    <li class="<%= item.is_done ? 'checklist-done' : '' %>">
-                      <form
-                        method="POST"
-                        action="/checklists/<%= item.id %>/toggle"
-                        class="inline-form"
-                      >
-                        <input type="hidden" name="boardId" value="<%= board.id %>" />
-                        <button type="submit" class="checkbox-btn">
-                          <%= item.is_done ? '☑' : '☐' %>
-                        </button>
-                      </form>
-                      <span><%= item.title %></span>
-                      <form
-                        method="POST"
-                        action="/checklists/<%= item.id %>/delete"
-                        class="inline-form"
-                      >
-                        <input type="hidden" name="boardId" value="<%= board.id %>" />
-                        <button type="submit" class="btn-icon">×</button>
-                      </form>
-                    </li>
-                    <% }) %>
-                  </ul>
-                  <form
-                    method="POST"
-                    action="/cards/<%= card.id %>/checklists"
-                    class="inline-form checklist-add-form"
-                  >
-                    <input type="hidden" name="boardId" value="<%= board.id %>" />
-                    <input
-                      type="text"
-                      name="title"
-                      placeholder="Nuevo elemento de checklist"
-                    />
-                    <button type="submit" class="btn-small">Añadir</button>
-                  </form>
-                </div>
-
-                <div class="card-comments">
-                  <h4>Comentarios</h4>
-                  <div class="comments-list">
-                    <% const comments2 = (commentsByCard && commentsByCard[card.id]) || []; %>
-                    <% comments2.forEach(function (c) { %>
-                    <div class="comment">
-                      <div class="comment-content"><%= c.content %></div>
-                      <div class="comment-meta">
-                        <%= new Date(c.created_at).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %>
-                      </div>
-                    </div>
-                    <% }) %>
-                    <% if (comments2.length === 0) { %>
-                    <p class="comment-empty">Sin comentarios todavía.</p>
-                    <% } %>
-                  </div>
-                  <form
-                    method="POST"
-                    action="/cards/<%= card.id %>/comments"
-                    class="comment-form"
-                  >
-                    <input type="hidden" name="boardId" value="<%= board.id %>" />
-                    <textarea
-                      name="content"
-                      placeholder="Escribe un comentario..."
-                      required
-                    ></textarea>
-                    <button type="submit" class="btn-small">Comentar</button>
-                  </form>
-                </div>
-              </div>
-            </article>
+            </div>
             <% }) %>
           </div>
-          <form
-            class="card-form"
-            method="POST"
-            action="/lists/<%= list.id %>/cards"
-          >
-            <input type="hidden" name="boardId" value="<%= board.id %>" />
-            <input
-              type="text"
-              name="title"
-              placeholder="Título de la tarjeta"
-              required
-            />
-            <textarea
-              name="description"
-              placeholder="Descripción (opcional)"
-            ></textarea>
-            <input
-              type="text"
-              name="labels"
-              placeholder="Etiquetas (opcional, separadas por comas)"
-            />
-            <input type="date" name="due_date" />
-            <button type="submit">Añadir tarjeta</button>
-          </form>
+
+          <div class="col-footer">
+            <form
+              method="POST"
+              action="/lists/<%= list.id %>/cards"
+              class="inline-form"
+            >
+              <input type="hidden" name="boardId" value="<%= board.id %>" />
+              <input
+                type="text"
+                name="title"
+                placeholder="¿Qué hay que hacer?"
+                class="form-input"
+                style="margin-bottom:6px"
+                required
+              />
+              <button type="submit" class="btn-add">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                >
+                  <path
+                    d="M6 1v10M1 6h10"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Agregar tarjeta
+              </button>
+            </form>
+          </div>
         </div>
         <% }) %>
 
-        <div class="list-column list-new">
-          <h2>Nueva lista</h2>
-          <form method="POST" action="/boards/<%= board.id %>/lists">
-            <input
-              type="text"
-              name="name"
-              placeholder="Nombre de la lista"
-              required
+        <!-- Columna para crear lista nueva -->
+        <button class="add-col" onclick="document.getElementById('new-list-form').style.display='block'">
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M6 1v10M1 6h10"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
             />
-            <button type="submit">Crear lista</button>
-          </form>
+          </svg>
+          Nueva columna
+        </button>
+      </div>
+
+      <!-- Formulario flotante para nueva lista -->
+      <form
+        id="new-list-form"
+        method="POST"
+        action="/boards/<%= board.id %>/lists"
+        style="display:none;margin:16px 24px 0;max-width:320px"
+      >
+        <input
+          type="text"
+          name="name"
+          placeholder="Nombre de la lista"
+          class="form-input"
+          required
+        />
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            onclick="document.getElementById('new-list-form').style.display='none'"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-accent">Crear lista</button>
         </div>
-      </section>
-    </main>
+      </form>
+    </div>
 
     <script>
       // Drag & Drop simple para mover tarjetas entre listas
@@ -334,7 +254,7 @@
       });
 
       document.addEventListener('dragover', (e) => {
-        if (e.target.classList.contains('cards') || e.target.classList.contains('card')) {
+        if (e.target.classList.contains('col-cards') || e.target.classList.contains('card')) {
           e.preventDefault();
         }
       });
@@ -342,7 +262,7 @@
       document.addEventListener('drop', async (e) => {
         if (!draggedCard) return;
 
-        const cardsContainer = e.target.closest('.cards');
+        const cardsContainer = e.target.closest('.col-cards');
         if (!cardsContainer) return;
 
         e.preventDefault();
@@ -383,19 +303,7 @@
         }
       });
 
-      // Mostrar / ocultar formulario de edición de tarjeta
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-action="toggle-edit"]');
-        if (!btn) return;
-        const cardId = btn.getAttribute('data-card-id');
-        const cardEl = document.querySelector('.card[data-card-id="' + cardId + '"]');
-        if (!cardEl) return;
-        const form = cardEl.querySelector('.card-edit-form');
-        if (!form) return;
-        form.classList.toggle('hidden');
-      });
-
-      // Filtro rápido de tarjetas por texto (título o etiquetas)
+      // Filtro rápido de tarjetas por texto (título o etiqueta)
       const filterInput = document.getElementById('card-filter');
       if (filterInput) {
         filterInput.addEventListener('input', () => {
