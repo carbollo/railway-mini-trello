@@ -601,11 +601,12 @@
         <div class="sidebar-item active">
           <span class="icon">⊞</span> Tableros
         </div>
-        <div class="sidebar-item" onclick="toast('Próximamente')">
+        <% const starredCount = boards.filter(function (b) { return b.is_starred; }).length; %>
+        <div class="sidebar-item" onclick="showStarred()">
           <span class="icon">★</span> Destacados
-          <span class="badge"><%= boards.length %></span>
+          <span class="badge"><%= starredCount %></span>
         </div>
-        <div class="sidebar-item" onclick="toast('Próximamente')">
+        <div class="sidebar-item" onclick="showRecent()">
           <span class="icon">🕐</span> Recientes
         </div>
 
@@ -700,6 +701,8 @@
             href="/boards/<%= b.id %>"
             class="board-card"
             data-name="<%= b.name.toLowerCase() %>"
+            data-star="<%= b.is_starred ? '1' : '0' %>"
+            data-id="<%= b.id %>"
           >
             <div class="board-thumb">
               <div class="board-mini-cols">
@@ -726,6 +729,26 @@
                   <div class="board-tag">
                     <%= (b.description || 'Tablero').slice(0, 18) %>
                   </div>
+                  <form
+                    method="POST"
+                    action="/boards/<%= b.id %>/star"
+                    onsubmit="event.stopPropagation()"
+                  >
+                    <input type="hidden" name="redirectTo" value="/" />
+                    <button
+                      type="submit"
+                      style="
+                        background: transparent;
+                        border: none;
+                        color: <%= b.is_starred ? '#facc15' : '#9b9ba8' %>;
+                        cursor: pointer;
+                        font-size: 13px;
+                      "
+                      title="<%= b.is_starred ? 'Quitar de destacados' : 'Marcar como destacado' %>"
+                    >
+                      <%= b.is_starred ? '★' : '☆' %>
+                    </button>
+                  </form>
                 </div>
                 <form
                   method="POST"
@@ -827,6 +850,34 @@
         cards.forEach((c) => {
           const name = c.getAttribute('data-name') || '';
           c.style.display = !term || name.includes(term) ? '' : 'none';
+        });
+      }
+      function showStarred() {
+        const title = document.getElementById('all-title');
+        if (title) title.textContent = 'Tableros destacados';
+        const cards = document.querySelectorAll('.board-card[data-star]');
+        cards.forEach((c) => {
+          const isStar = c.getAttribute('data-star') === '1';
+          c.style.display = isStar ? '' : 'none';
+        });
+      }
+      function showRecent() {
+        const title = document.getElementById('all-title');
+        if (title) title.textContent = 'Tableros recientes';
+        const grid = document.getElementById('boards-grid');
+        if (!grid) return;
+        const cards = Array.from(
+          grid.querySelectorAll('.board-card[data-id]')
+        );
+        cards
+          .sort((a, b) => {
+            const idA = parseInt(a.getAttribute('data-id') || '0', 10);
+            const idB = parseInt(b.getAttribute('data-id') || '0', 10);
+            return idB - idA;
+          })
+          .forEach((c) => grid.insertBefore(c, grid.firstChild));
+        cards.forEach((c) => {
+          c.style.display = '';
         });
       }
     </script>

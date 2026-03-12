@@ -31,7 +31,8 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS boards (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
-      description TEXT
+      description TEXT,
+      is_starred BOOLEAN NOT NULL DEFAULT FALSE
     );
   `);
 
@@ -85,14 +86,17 @@ async function ensureSchema() {
 
   await pool.query(`
     ALTER TABLE boards
-    ADD COLUMN IF NOT EXISTS description TEXT;
+    ADD COLUMN IF NOT EXISTS description TEXT,
+    ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE;
   `);
 }
 
 // Página principal: listado de tableros
 app.get('/', async (req, res) => {
   try {
-    const { rows: boards } = await pool.query('SELECT * FROM boards ORDER BY id ASC');
+    const { rows: boards } = await pool.query(
+      'SELECT * FROM boards ORDER BY id DESC'
+    );
     res.render('boards', { boards });
   } catch (err) {
     console.error(err);
@@ -109,6 +113,21 @@ app.post('/boards/:id/delete', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error eliminando tablero');
+  }
+});
+
+// Marcar / desmarcar tablero como destacado
+app.post('/boards/:id/star', async (req, res) => {
+  const boardId = req.params.id;
+  const { redirectTo } = req.body;
+  try {
+    await pool.query('UPDATE boards SET is_starred = NOT is_starred WHERE id = $1', [
+      boardId,
+    ]);
+    res.redirect(redirectTo || '/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando destacado del tablero');
   }
 });
 
