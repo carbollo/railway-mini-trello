@@ -175,27 +175,10 @@ app.get('/boards/:id', async (req, res) => {
     if (boardRows.length === 0) return res.status(404).send('Tablero no encontrado');
     const board = boardRows[0];
 
-    let { rows: lists } = await pool.query(
+    const { rows: lists } = await pool.query(
       'SELECT * FROM lists WHERE board_id = $1 ORDER BY position ASC, id ASC',
       [boardId]
     );
-
-    // Si el tablero está vacío, creamos columnas por defecto tipo Trello
-    if (lists.length === 0) {
-      const defaults = ['Por hacer', 'En progreso', 'Revisión', 'Listo'];
-      for (let i = 0; i < defaults.length; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        await pool.query(
-          'INSERT INTO lists (board_id, name, position) VALUES ($1, $2, $3)',
-          [boardId, defaults[i], i]
-        );
-      }
-      const refreshed = await pool.query(
-        'SELECT * FROM lists WHERE board_id = $1 ORDER BY position ASC, id ASC',
-        [boardId]
-      );
-      lists = refreshed.rows;
-    }
 
     const { rows: cards } = await pool.query(
       'SELECT * FROM cards WHERE is_archived = FALSE AND list_id IN (SELECT id FROM lists WHERE board_id = $1) ORDER BY position ASC, id ASC',
