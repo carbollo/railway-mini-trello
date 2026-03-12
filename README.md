@@ -93,6 +93,7 @@ La primera vez que arranca, la app crea automáticamente las tablas `boards`, `l
 - **Descripción de tablero** editable (contexto/resumen).
 - Vista de **tarjetas archivadas** con opción de desarchivar.
 - **Filtro rápido** de tarjetas por título o etiquetas.
+- Vista de **Calendario** por tablero, que muestra las tarjetas en un calendario mensual según su fecha de vencimiento.
 
 ## 5. Posibles extensiones
 

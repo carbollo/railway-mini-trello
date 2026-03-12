@@ -242,6 +242,92 @@ app.get('/boards/:id/archive', async (req, res) => {
   }
 });
 
+// Vista de calendario de un tablero (tarjetas por fecha de vencimiento)
+app.get('/boards/:id/calendar', async (req, res) => {
+  const boardId = req.params.id;
+  const { month } = req.query; // formato esperado YYYY-MM
+
+  try {
+    const { rows: boardRows } = await pool.query('SELECT * FROM boards WHERE id = $1', [boardId]);
+    if (boardRows.length === 0) return res.status(404).send('Tablero no encontrado');
+    const board = boardRows[0];
+
+    const baseDate = month ? new Date(`${month}-01T00:00:00Z`) : new Date();
+    const year = baseDate.getUTCFullYear();
+    const monthIndex = baseDate.getUTCMonth(); // 0-11
+
+    const firstDay = new Date(Date.UTC(year, monthIndex, 1));
+    const firstDayWeek = firstDay.getUTCDay(); // 0-6 (domingo-sábado)
+    const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+
+    const startStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const endStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(daysInMonth).padStart(
+      2,
+      '0'
+    )}`;
+
+    const { rows: cards } = await pool.query(
+      `SELECT c.*, l.name AS list_name
+       FROM cards c
+       JOIN lists l ON c.list_id = l.id
+       WHERE c.is_archived = FALSE
+       AND c.due_date IS NOT NULL
+       AND l.board_id = $1
+       AND c.due_date BETWEEN $2 AND $3
+       ORDER BY c.due_date ASC, c.position ASC, c.id ASC`,
+      [boardId, startStr, endStr]
+    );
+
+    const cardsByDate = cards.reduce((acc, card) => {
+      const key = card.due_date.toISOString().slice(0, 10);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(card);
+      return acc;
+    }, {});
+
+    const totalCells = Math.ceil((firstDayWeek + daysInMonth) / 7) * 7;
+    const calendarCells = [];
+    for (let i = 0; i < totalCells; i += 1) {
+      const dayNum = i - firstDayWeek + 1;
+      const inCurrent = dayNum >= 1 && dayNum <= daysInMonth;
+      const dateStr = inCurrent
+        ? `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+        : null;
+      calendarCells.push({
+        inCurrent,
+        dayNum: inCurrent ? dayNum : null,
+        dateStr,
+        cards: dateStr && cardsByDate[dateStr] ? cardsByDate[dateStr] : [],
+      });
+    }
+
+    const monthLabel = new Date(Date.UTC(year, monthIndex, 1)).toLocaleString('es-ES', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const prevMonthDate = new Date(Date.UTC(year, monthIndex - 1, 1));
+    const nextMonthDate = new Date(Date.UTC(year, monthIndex + 1, 1));
+    const prevMonthParam = `${prevMonthDate.getUTCFullYear()}-${String(
+      prevMonthDate.getUTCMonth() + 1
+    ).padStart(2, '0')}`;
+    const nextMonthParam = `${nextMonthDate.getUTCFullYear()}-${String(
+      nextMonthDate.getUTCMonth() + 1
+    ).padStart(2, '0')}`;
+
+    res.render('board-calendar', {
+      board,
+      monthLabel,
+      calendarCells,
+      prevMonthParam,
+      nextMonthParam,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error cargando calendario');
+  }
+});
+
 // Crear lista en un tablero
 app.post('/boards/:id/lists', async (req, res) => {
   const boardId = req.params.id;
