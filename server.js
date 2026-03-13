@@ -381,6 +381,86 @@ app.get('/boards/:id/calendar', async (req, res) => {
   }
 });
 
+// Calendario global con tarjetas de todos los tableros
+app.get('/calendar', async (req, res) => {
+  const { month } = req.query;
+
+  try {
+    const baseDate = month ? new Date(`${month}-01T00:00:00Z`) : new Date();
+    const year = baseDate.getUTCFullYear();
+    const monthIndex = baseDate.getUTCMonth();
+
+    const firstDay = new Date(Date.UTC(year, monthIndex, 1));
+    const firstDayWeek = firstDay.getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+
+    const startStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const endStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(daysInMonth).padStart(
+      2,
+      '0'
+    )}`;
+
+    const { rows: cards } = await pool.query(
+      `SELECT c.*, l.name AS list_name, b.name AS board_name
+       FROM cards c
+       JOIN lists l ON c.list_id = l.id
+       JOIN boards b ON l.board_id = b.id
+       WHERE c.is_archived = FALSE
+       AND c.due_date IS NOT NULL
+       AND c.due_date BETWEEN $1 AND $2
+       ORDER BY c.due_date ASC, c.position ASC, c.id ASC`,
+      [startStr, endStr]
+    );
+
+    const cardsByDate = cards.reduce((acc, card) => {
+      const key = card.due_date.toISOString().slice(0, 10);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(card);
+      return acc;
+    }, {});
+
+    const totalCells = Math.ceil((firstDayWeek + daysInMonth) / 7) * 7;
+    const calendarCells = [];
+    for (let i = 0; i < totalCells; i += 1) {
+      const dayNum = i - firstDayWeek + 1;
+      const inCurrent = dayNum >= 1 && dayNum <= daysInMonth;
+      const dateStr = inCurrent
+        ? `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+        : null;
+      calendarCells.push({
+        inCurrent,
+        dayNum: inCurrent ? dayNum : null,
+        dateStr,
+        cards: dateStr && cardsByDate[dateStr] ? cardsByDate[dateStr] : [],
+      });
+    }
+
+    const monthLabel = new Date(Date.UTC(year, monthIndex, 1)).toLocaleString('es-ES', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const prevMonthDate = new Date(Date.UTC(year, monthIndex - 1, 1));
+    const nextMonthDate = new Date(Date.UTC(year, monthIndex + 1, 1));
+    const prevMonthParam = `${prevMonthDate.getUTCFullYear()}-${String(
+      prevMonthDate.getUTCMonth() + 1
+    ).padStart(2, '0')}`;
+    const nextMonthParam = `${nextMonthDate.getUTCFullYear()}-${String(
+      nextMonthDate.getUTCMonth() + 1
+    ).padStart(2, '0')}`;
+
+    res.render('global-calendar', {
+      monthLabel,
+      calendarCells,
+      prevMonthParam,
+      nextMonthParam,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error cargando calendario global');
+  }
+});
+
 // Crear lista en un tablero
 app.post('/boards/:id/lists', async (req, res) => {
   const boardId = req.params.id;

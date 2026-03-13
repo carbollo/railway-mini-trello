@@ -566,7 +566,6 @@
     </style>
   </head>
   <body>
-    <% const firstBoardId = boards.length ? boards[0].id : null; %>
     <!-- NAV -->
     <nav>
       <div class="nav-logo">flow<span>.</span>board</div>
@@ -575,12 +574,7 @@
         <button class="nav-tab" onclick="toast('Abre un tablero primero')">
           Tablero
         </button>
-        <button
-          class="nav-tab"
-          onclick="<%= firstBoardId ? `window.location.href='/boards/${firstBoardId}/calendar'` : `toast('Crea un tablero primero')` %>"
-        >
-          Calendario
-        </button>
+        <button class="nav-tab" onclick="window.location.href='/calendar'">Calendario</button>
         <button
           class="nav-tab"
           onclick="window.location.href='/analytics'"
