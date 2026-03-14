@@ -102,6 +102,21 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS color TEXT;
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS templates (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS template_lists (
+      id SERIAL PRIMARY KEY,
+      template_id INTEGER NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      position INTEGER NOT NULL DEFAULT 0
+    );
+  `);
 }
 
 // Página principal: listado de tableros
@@ -113,7 +128,22 @@ app.get('/', async (req, res) => {
     const { rows: folders } = await pool.query(
       'SELECT * FROM folders ORDER BY name ASC'
     );
-    res.render('boards', { boards, folders });
+    const { rows: templates } = await pool.query(
+      'SELECT * FROM templates ORDER BY name ASC'
+    );
+    const { rows: templateLists } = await pool.query(
+      'SELECT * FROM template_lists ORDER BY template_id, position, id'
+    );
+    const listsByTemplate = {};
+    for (const row of templateLists || []) {
+      if (!listsByTemplate[row.template_id]) listsByTemplate[row.template_id] = [];
+      listsByTemplate[row.template_id].push(row);
+    }
+    const templatesWithLists = (templates || []).map((t) => ({
+      ...t,
+      lists: listsByTemplate[t.id] || [],
+    }));
+    res.render('boards', { boards, folders, templates: templatesWithLists });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error cargando tableros');
@@ -211,6 +241,34 @@ app.post('/folders/:id/delete', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Error eliminando carpeta');
+  }
+});
+
+// Crear plantilla (nombre + columnas)
+app.post('/templates', async (req, res) => {
+  try {
+    const { name, columns } = req.body;
+    if (!name || !String(name).trim()) return res.redirect('/');
+    const colNames = Array.isArray(columns)
+      ? columns.filter((c) => c != null && String(c).trim() !== '')
+      : columns != null && String(columns).trim() !== ''
+        ? [String(columns).trim()]
+        : [];
+    const { rows: inserted } = await pool.query(
+      'INSERT INTO templates (name) VALUES ($1) RETURNING id',
+      [String(name).trim()]
+    );
+    const templateId = inserted[0].id;
+    for (let i = 0; i < colNames.length; i++) {
+      await pool.query(
+        'INSERT INTO template_lists (template_id, name, position) VALUES ($1, $2, $3)',
+        [templateId, String(colNames[i]).trim(), i]
+      );
+    }
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error creando plantilla');
   }
 });
 

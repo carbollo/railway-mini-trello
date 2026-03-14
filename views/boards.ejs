@@ -749,6 +749,13 @@
             >
               Ver plantillas
             </button>
+            <button
+              class="btn btn-ghost"
+              type="button"
+              onclick="openTemplateModal()"
+            >
+              Crear plantillas
+            </button>
             <button class="btn btn-accent" type="button" onclick="openModal()">
               + Nuevo tablero
             </button>
@@ -1041,6 +1048,47 @@
       </div>
     </div>
 
+    <!-- MODAL CREAR PLANTILLA -->
+    <div
+      class="modal-bg"
+      id="template-modal"
+      style="display:none"
+      onclick="if(event.target===this)closeTemplateModal()"
+    >
+      <div class="modal">
+        <div class="modal-title">Crear plantilla</div>
+        <form id="create-template-form" method="POST" action="/templates">
+          <div class="form-group">
+            <label class="form-label">Nombre de la plantilla</label>
+            <input
+              class="form-input"
+              id="template-name"
+              name="name"
+              type="text"
+              placeholder="Ej: Desarrollo web, Marketing..."
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Columnas (listas del tablero)</label>
+            <div id="template-columns-list">
+              <div class="template-column-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                <input class="form-input" name="columns" type="text" placeholder="Nombre de columna" style="flex:1" />
+                <button type="button" class="btn btn-ghost" style="padding:6px 10px" onclick="removeTemplateColumn(this)" title="Quitar">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost" style="margin-top:6px" onclick="addTemplateColumn()">
+              + Añadir columna
+            </button>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeTemplateModal()">Cancelar</button>
+            <button type="submit" class="btn btn-accent">Crear plantilla</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       function openModal() {
         document.getElementById('modal').style.display = 'flex';
@@ -1049,6 +1097,28 @@
       }
       function closeModal() {
         document.getElementById('modal').style.display = 'none';
+      }
+      function openTemplateModal() {
+        document.getElementById('template-modal').style.display = 'flex';
+        var list = document.getElementById('template-columns-list');
+        list.innerHTML = '<div class="template-column-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><input class="form-input" name="columns" type="text" placeholder="Nombre de columna" style="flex:1" /><button type="button" class="btn btn-ghost" style="padding:6px 10px" onclick="removeTemplateColumn(this)" title="Quitar">×</button></div>';
+        document.getElementById('template-name').value = '';
+      }
+      function closeTemplateModal() {
+        document.getElementById('template-modal').style.display = 'none';
+      }
+      function addTemplateColumn() {
+        var list = document.getElementById('template-columns-list');
+        var row = document.createElement('div');
+        row.className = 'template-column-row';
+        row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+        row.innerHTML = '<input class="form-input" name="columns" type="text" placeholder="Nombre de columna" style="flex:1" /><button type="button" class="btn btn-ghost" style="padding:6px 10px" onclick="removeTemplateColumn(this)" title="Quitar">×</button>';
+        list.appendChild(row);
+      }
+      function removeTemplateColumn(btn) {
+        var list = document.getElementById('template-columns-list');
+        if (list.querySelectorAll('.template-column-row').length <= 1) return;
+        btn.closest('.template-column-row').remove();
       }
       function toast(msg) {
         let t = document.querySelector('.toast');
