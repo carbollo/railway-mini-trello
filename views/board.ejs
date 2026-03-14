@@ -783,6 +783,34 @@
                       <%= card.is_done ? '✓' : '' %>
                     </button>
                   </form>
+                  <form
+                    method="POST"
+                    action="/cards/<%= card.id %>/delete"
+                    style="margin:0"
+                    onsubmit="return confirm('¿Eliminar esta tarjeta?');"
+                  >
+                    <input type="hidden" name="boardId" value="<%= board.id %>" />
+                    <button
+                      type="submit"
+                      onclick="event.stopPropagation()"
+                      title="Eliminar tarjeta"
+                      style="
+                        background: transparent;
+                        border: 1px solid var(--border2);
+                        color: var(--text3);
+                        border-radius: 6px;
+                        width: 24px;
+                        height: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 13px;
+                        cursor: pointer;
+                      "
+                    >
+                      ×
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>
