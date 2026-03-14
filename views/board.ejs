@@ -352,14 +352,30 @@
         border-radius: var(--radius-sm);
         padding: 12px;
         margin-bottom: 8px;
-        cursor: grab;
         transition:
           border-color 0.15s,
           transform 0.15s;
         user-select: none;
+        position: relative;
       }
       .card:hover {
         border-color: var(--border2);
+      }
+      .card-drag-handle {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        cursor: grab;
+        color: var(--text3);
+        font-size: 14px;
+        padding: 2px 4px;
+        line-height: 1;
+      }
+      .card-drag-handle:hover {
+        color: var(--text2);
+      }
+      .card-drag-handle:active {
+        cursor: grabbing;
       }
       .card-tags {
         display: flex;
@@ -671,7 +687,6 @@
 
             <div
               class="card"
-              draggable="true"
               data-card-id="<%= card.id %>"
               data-title="<%= card.title.toLowerCase() %>"
               data-labels="<%= (card.labels || '').toLowerCase() %>"
@@ -680,6 +695,13 @@
               data-list-id="<%= list.id %>"
               data-done="<%= card.is_done ? '1' : '0' %>"
             >
+              <div
+                class="card-drag-handle"
+                draggable="true"
+                title="Arrastra para mover a otra columna"
+              >
+                <span aria-hidden="true">⋮⋮</span>
+              </div>
               <div class="card-tags">
                 <span class="tag <%= tagClass %>"><%= labelText %></span>
               </div>
@@ -917,15 +939,26 @@
       let draggedCard = null;
 
       document.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('card')) {
-          draggedCard = e.target;
-          e.dataTransfer.effectAllowed = 'move';
-        }
+        const handle = e.target.closest('.card-drag-handle');
+        if (!handle) return;
+        const card = handle.closest('.card');
+        if (!card) return;
+        draggedCard = card;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.getAttribute('data-card-id'));
+        e.dataTransfer.setDragImage(card, 0, 0);
+        card.style.opacity = '0.6';
+      });
+
+      document.addEventListener('dragend', (e) => {
+        if (draggedCard) draggedCard.style.opacity = '';
+        draggedCard = null;
       });
 
       document.addEventListener('dragover', (e) => {
-        if (e.target.classList.contains('col-cards') || e.target.classList.contains('card')) {
+        if (e.target.closest('.col-cards') || e.target.closest('.card')) {
           e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
         }
       });
 
@@ -936,34 +969,32 @@
         if (!cardsContainer) return;
 
         e.preventDefault();
+        draggedCard.style.opacity = '';
 
         const listId = cardsContainer.getAttribute('data-list-id');
         const cardId = draggedCard.getAttribute('data-card-id');
 
+        if (cardsContainer === draggedCard.parentElement) {
+          draggedCard = null;
+          return;
+        }
+
         cardsContainer.appendChild(draggedCard);
 
         try {
-          // Primero movemos la tarjeta a la lista nueva
           await fetch('/cards/' + cardId + '/move', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              targetListId: listId,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetListId: listId }),
           });
 
-          // Luego enviamos el nuevo orden de tarjetas en esa lista
           const ids = Array.from(
             cardsContainer.querySelectorAll('.card[data-card-id]')
           ).map((el) => el.getAttribute('data-card-id'));
 
           await fetch('/lists/' + listId + '/reorder', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cardIds: ids }),
           });
         } catch (err) {
