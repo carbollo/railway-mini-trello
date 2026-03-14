@@ -742,7 +742,7 @@
             <button
               class="btn btn-ghost"
               type="button"
-              onclick="toast('Próximamente')"
+              onclick="openTemplatesListModal()"
             >
               Ver plantillas
             </button>
@@ -1097,6 +1097,77 @@
       </div>
     </div>
 
+    <!-- MODAL VER PLANTILLAS -->
+    <div
+      class="modal-bg"
+      id="templates-list-modal"
+      style="display:none"
+      onclick="if(event.target===this)closeTemplatesListModal()"
+    >
+      <div class="modal" style="max-width: 520px">
+        <div class="modal-title">Plantillas</div>
+        <div id="templates-list-content">
+          <% if (typeof templates !== 'undefined' && templates.length) { %>
+          <% templates.forEach(function(t) { %>
+          <% const colNames = (t.lists || []).map(function(l) { return l.name; }); %>
+          <div
+            class="template-list-item"
+            data-id="<%= t.id %>"
+            data-name="<%= t.name.replace(/'/g, '&#39;') %>"
+            data-columns="<%= encodeURIComponent(JSON.stringify(colNames)) %>"
+            style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"
+          >
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;color:var(--text)"><%= t.name %></div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px">
+                <%= colNames.length ? colNames.join(' · ') : 'Sin columnas' %>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="openEditTemplateModal(this.closest('.template-list-item'))">Editar</button>
+              <form method="POST" action="/templates/<%= t.id %>/delete" style="margin:0" onsubmit="return confirm('¿Eliminar esta plantilla?');">
+                <button type="submit" class="btn btn-ghost" style="padding:6px 12px;font-size:12px">Eliminar</button>
+              </form>
+            </div>
+          </div>
+          <% }) %>
+          <% } else { %>
+          <p style="color:var(--text3);margin:0">No hay plantillas. Crea una con «Crear plantillas».</p>
+          <% } %>
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button type="button" class="btn btn-ghost" onclick="closeTemplatesListModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDITAR PLANTILLA -->
+    <div
+      class="modal-bg"
+      id="edit-template-modal"
+      style="display:none"
+      onclick="if(event.target===this)closeEditTemplateModal()"
+    >
+      <div class="modal">
+        <div class="modal-title">Editar plantilla</div>
+        <form id="edit-template-form" method="POST">
+          <div class="form-group">
+            <label class="form-label">Nombre de la plantilla</label>
+            <input class="form-input" id="edit-template-name" name="name" type="text" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Columnas (listas del tablero)</label>
+            <div id="edit-template-columns-list"></div>
+            <button type="button" class="btn btn-ghost" style="margin-top:6px" onclick="addEditTemplateColumn()">+ Añadir columna</button>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeEditTemplateModal()">Cancelar</button>
+            <button type="submit" class="btn btn-accent">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       function openModal() {
         document.getElementById('modal').style.display = 'flex';
@@ -1125,6 +1196,51 @@
       }
       function removeTemplateColumn(btn) {
         var list = document.getElementById('template-columns-list');
+        if (list.querySelectorAll('.template-column-row').length <= 1) return;
+        btn.closest('.template-column-row').remove();
+      }
+      function openTemplatesListModal() {
+        document.getElementById('templates-list-modal').style.display = 'flex';
+      }
+      function closeTemplatesListModal() {
+        document.getElementById('templates-list-modal').style.display = 'none';
+      }
+      function openEditTemplateModal(rowEl) {
+        if (!rowEl) return;
+        var id = rowEl.getAttribute('data-id');
+        var name = rowEl.getAttribute('data-name') || '';
+        var columnsJson = rowEl.getAttribute('data-columns');
+        var columns = [];
+        try {
+          if (columnsJson) columns = JSON.parse(decodeURIComponent(columnsJson));
+        } catch (e) {}
+        document.getElementById('edit-template-form').action = '/templates/' + id + '/update';
+        document.getElementById('edit-template-name').value = name.replace(/&#39;/g, "'");
+        var list = document.getElementById('edit-template-columns-list');
+        list.innerHTML = '';
+        if (columns.length === 0) columns = [''];
+        columns.forEach(function (col) {
+          var row = document.createElement('div');
+          row.className = 'template-column-row';
+          row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+          row.innerHTML = '<input class="form-input" name="columns" type="text" value="' + (col || '').replace(/"/g, '&quot;') + '" placeholder="Nombre de columna" style="flex:1" /><button type="button" class="btn btn-ghost" style="padding:6px 10px" onclick="removeEditTemplateColumn(this)" title="Quitar">×</button>';
+          list.appendChild(row);
+        });
+        document.getElementById('edit-template-modal').style.display = 'flex';
+      }
+      function closeEditTemplateModal() {
+        document.getElementById('edit-template-modal').style.display = 'none';
+      }
+      function addEditTemplateColumn() {
+        var list = document.getElementById('edit-template-columns-list');
+        var row = document.createElement('div');
+        row.className = 'template-column-row';
+        row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+        row.innerHTML = '<input class="form-input" name="columns" type="text" placeholder="Nombre de columna" style="flex:1" /><button type="button" class="btn btn-ghost" style="padding:6px 10px" onclick="removeEditTemplateColumn(this)" title="Quitar">×</button>';
+        list.appendChild(row);
+      }
+      function removeEditTemplateColumn(btn) {
+        var list = document.getElementById('edit-template-columns-list');
         if (list.querySelectorAll('.template-column-row').length <= 1) return;
         btn.closest('.template-column-row').remove();
       }

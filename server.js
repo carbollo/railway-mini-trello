@@ -272,6 +272,47 @@ app.post('/templates', async (req, res) => {
   }
 });
 
+// Actualizar plantilla (nombre + columnas)
+app.post('/templates/:id/update', async (req, res) => {
+  const templateId = req.params.id;
+  try {
+    const { name, columns } = req.body;
+    if (!name || !String(name).trim()) return res.redirect('/');
+    await pool.query('UPDATE templates SET name = $1 WHERE id = $2', [
+      String(name).trim(),
+      templateId,
+    ]);
+    await pool.query('DELETE FROM template_lists WHERE template_id = $1', [templateId]);
+    const colNames = Array.isArray(columns)
+      ? columns.filter((c) => c != null && String(c).trim() !== '')
+      : columns != null && String(columns).trim() !== ''
+        ? [String(columns).trim()]
+        : [];
+    for (let i = 0; i < colNames.length; i++) {
+      await pool.query(
+        'INSERT INTO template_lists (template_id, name, position) VALUES ($1, $2, $3)',
+        [templateId, String(colNames[i]).trim(), i]
+      );
+    }
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error actualizando plantilla');
+  }
+});
+
+// Eliminar plantilla
+app.post('/templates/:id/delete', async (req, res) => {
+  const templateId = req.params.id;
+  try {
+    await pool.query('DELETE FROM templates WHERE id = $1', [templateId]);
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando plantilla');
+  }
+});
+
 // Crear tablero (opcionalmente desde plantilla)
 app.post('/boards', async (req, res) => {
   try {
