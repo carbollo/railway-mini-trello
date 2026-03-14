@@ -687,8 +687,8 @@
               <button
                 type="button"
                 class="folder-btn-icon"
-                title="Renombrar carpeta"
-                onclick="event.stopPropagation(); renameFolder('<%= f.id %>', '<%- f.name.replace(/'/g, '\\&#39;') %>');"
+                title="Editar carpeta"
+                onclick="event.stopPropagation(); openEditFolderModal(<%= f.id %>, '<%- (f.name || "").replace(/'/g, '&#39;').replace(/"/g, '&quot;') %>');"
               >
                 ✎
               </button>
@@ -1000,9 +1000,33 @@
       </div>
     </div>
 
-    <form id="rename-folder-form" method="POST" style="display:none">
-      <input type="hidden" name="name" id="rename-folder-name" />
-    </form>
+    <!-- MODAL EDITAR CARPETA -->
+    <div
+      class="modal-bg"
+      id="edit-folder-modal"
+      style="display:none"
+      onclick="if(event.target===this)closeEditFolderModal()"
+    >
+      <div class="modal">
+        <div class="modal-title">Editar carpeta</div>
+        <form id="edit-folder-form" method="POST">
+          <div class="form-group">
+            <label class="form-label">Nombre de la carpeta</label>
+            <input
+              class="form-input"
+              id="edit-folder-name"
+              name="name"
+              type="text"
+              required
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeEditFolderModal()">Cancelar</button>
+            <button type="submit" class="btn btn-accent">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- MODAL EDITAR TABLERO -->
     <div
@@ -1369,20 +1393,13 @@
           el.style.display = show ? '' : 'none';
         });
       }
-      function renameFolder(folderId, currentName) {
-        const nextName = window.prompt(
-          'Nuevo nombre de carpeta',
-          currentName || ''
-        );
-        if (!nextName) return;
-        const form = document.getElementById('rename-folder-form');
-        const input = document.getElementById('rename-folder-name');
-        form.action = '/folders/' + String(folderId);
-        if (!form.action.endsWith('/update')) {
-          form.action += '/update';
-        }
-        input.value = nextName;
-        form.submit();
+      function openEditFolderModal(folderId, currentName) {
+        document.getElementById('edit-folder-form').action = '/folders/' + String(folderId) + '/update';
+        document.getElementById('edit-folder-name').value = (currentName || '').replace(/&#39;/g, "'");
+        document.getElementById('edit-folder-modal').style.display = 'flex';
+      }
+      function closeEditFolderModal() {
+        document.getElementById('edit-folder-modal').style.display = 'none';
       }
       // Estado inicial: vista general, sin carpeta seleccionada
       filterByFolder('');
