@@ -653,6 +653,9 @@
           <% boards.forEach(function (b) { %>
           <div
             class="sidebar-item"
+            data-board-id="<%= b.id %>"
+            data-folder-id="<%= b.folder_id || '' %>"
+            data-star="<%= b.is_starred ? '1' : '0' %>"
             onclick="window.location.href='/boards/<%= b.id %>'"
           >
             <span class="icon">▣</span>
@@ -1006,6 +1009,7 @@
 
           c.style.display = show ? '' : 'none';
         });
+        updateSidebarForFolder(target);
         const title = document.getElementById('all-title');
         if (title) {
           if (!target) {
@@ -1014,6 +1018,24 @@
             title.textContent = 'Tableros en carpeta';
           }
         }
+      }
+      function updateSidebarForFolder(folderId) {
+        const target = String(folderId || '').trim();
+        const items = document.querySelectorAll(
+          '#sidebar-boards .sidebar-item[data-folder-id]'
+        );
+        items.forEach((el) => {
+          const fid = (el.getAttribute('data-folder-id') || '').trim();
+          let show = false;
+          if (!target) {
+            // Vista general: solo tableros sin carpeta
+            show = !fid;
+          } else {
+            // Vista dentro de carpeta: solo tableros de esa carpeta
+            show = fid === target;
+          }
+          el.style.display = show ? '' : 'none';
+        });
       }
       function renameFolder(folderId, currentName) {
         const nextName = window.prompt(
