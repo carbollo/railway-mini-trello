@@ -454,6 +454,48 @@
       .card-checks.all-done {
         color: #5dcaa5;
       }
+      .modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        backdrop-filter: blur(4px);
+      }
+      .modal {
+        background: var(--bg2);
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 24px;
+        width: 420px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+      .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 18px;
+        color: var(--text);
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text3);
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 18px;
+      }
       .archived-section {
         padding: 8px 24px 0;
         font-size: 13px;
