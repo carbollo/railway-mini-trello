@@ -238,7 +238,7 @@ app.post('/boards', async (req, res) => {
 app.post('/boards/:id/update', async (req, res) => {
   const boardId = req.params.id;
   const { name, description, color } = req.body;
-  if (!name) return res.redirect(`/boards/${boardId}`);
+  if (!name) return res.redirect('/');
   try {
     const safeColor =
       color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
@@ -246,7 +246,7 @@ app.post('/boards/:id/update', async (req, res) => {
       'UPDATE boards SET name = $1, description = $2, color = $3 WHERE id = $4',
       [name, description || null, safeColor, boardId]
     );
-    res.redirect(`/boards/${boardId}`);
+    res.redirect('/');
   } catch (err) {
     console.error(err);
     res.status(500).send('Error actualizando tablero');
