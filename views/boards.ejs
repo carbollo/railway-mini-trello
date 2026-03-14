@@ -886,7 +886,7 @@
                   type="button"
                   class="btn btn-ghost"
                   style="padding:2px 8px;font-size:11px"
-                  onclick="event.stopPropagation(); openEditBoardModal(<%= b.id %>)"
+                  onclick="event.preventDefault(); event.stopPropagation(); openEditBoardModal(<%= b.id %>)"
                 >
                   Editar
                 </button>
