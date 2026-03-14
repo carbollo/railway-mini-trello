@@ -325,6 +325,11 @@
         text-decoration: none;
         color: inherit;
       }
+      .board-card.folder-card {
+        border-style: dashed;
+        border-color: rgba(88, 90, 128, 0.9);
+        background: rgba(15, 23, 42, 0.95);
+      }
       .board-card:hover {
         border-color: var(--border2);
         transform: translateY(-2px);
@@ -333,6 +338,13 @@
         height: 110px;
         position: relative;
         overflow: hidden;
+      }
+      .folder-card .board-thumb {
+        background: radial-gradient(
+          circle at 0% 0%,
+          rgba(129, 140, 248, 0.9),
+          rgba(15, 23, 42, 0.9)
+        );
       }
       .board-mini-cols {
         display: flex;
@@ -392,9 +404,33 @@
         color: #afa9ec;
         border: 0.5px solid rgba(127, 119, 221, 0.25);
       }
+      .folder-pill {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.09);
+        font-size: 10px;
+        color: #7dd3fc;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+      }
       .board-updated {
         font-size: 11px;
         color: var(--text3);
+      }
+      .folder-actions {
+        display: flex;
+        gap: 2px;
+        margin-left: auto;
+      }
+      .folder-btn-icon {
+        background: transparent;
+        border: none;
+        color: #9b9ba8;
+        font-size: 11px;
+        padding: 0 2px;
+        cursor: pointer;
+      }
+      .folder-btn-icon:hover {
+        color: #e5e7eb;
       }
       .new-board-card {
         border-radius: var(--radius);
@@ -642,6 +678,29 @@
           >
             <span class="icon">⧉</span>
             <span><%= f.name %></span>
+            <div class="folder-actions">
+              <button
+                type="button"
+                class="folder-btn-icon"
+                title="Renombrar carpeta"
+                onclick="event.stopPropagation(); renameFolder('<%= f.id %>', '<%- f.name.replace(/'/g, '\\&#39;') %>');"
+              >
+                ✎
+              </button>
+              <form
+                method="POST"
+                action="/folders/<%= f.id %>/delete"
+                onsubmit="event.stopPropagation(); return confirm('¿Eliminar carpeta? Los tableros seguirán existiendo.');"
+              >
+                <button
+                  type="submit"
+                  class="folder-btn-icon"
+                  title="Eliminar carpeta"
+                >
+                  ×
+                </button>
+              </form>
+            </div>
           </div>
           <% }) %>
           <% } %>
@@ -734,6 +793,27 @@
         </div>
 
         <div class="boards-grid" id="boards-grid">
+          <% if (typeof folders !== 'undefined') { %>
+          <% folders.forEach(function (f) { %>
+          <div
+            class="board-card folder-card"
+            data-name="<%= f.name.toLowerCase() %>"
+            data-folder-id="<%= f.id %>"
+            onclick="filterByFolder('<%= f.id %>')"
+          >
+            <div class="board-thumb"></div>
+            <div class="board-info">
+              <div class="board-name"><%= f.name %></div>
+              <div class="board-meta">
+                <div class="board-meta-left">
+                  <div class="folder-pill">Carpeta</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% }) %>
+          <% } %>
+
           <% boards.forEach(function (b) { %>
           <a
             href="/boards/<%= b.id %>"
@@ -875,6 +955,10 @@
       </div>
     </div>
 
+    <form id="rename-folder-form" method="POST" style="display:none">
+      <input type="hidden" name="name" id="rename-folder-name" />
+    </form>
+
     <script>
       function openModal() {
         document.getElementById('modal').style.display = 'flex';
@@ -918,6 +1002,21 @@
             title.textContent = 'Tableros en carpeta';
           }
         }
+      }
+      function renameFolder(folderId, currentName) {
+        const nextName = window.prompt(
+          'Nuevo nombre de carpeta',
+          currentName || ''
+        );
+        if (!nextName) return;
+        const form = document.getElementById('rename-folder-form');
+        const input = document.getElementById('rename-folder-name');
+        form.action = '/folders/' + String(folderId);
+        if (!form.action.endsWith('/update')) {
+          form.action += '/update';
+        }
+        input.value = nextName;
+        form.submit();
       }
       function showStarred() {
         const title = document.getElementById('all-title');

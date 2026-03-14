@@ -185,6 +185,33 @@ app.post('/folders', async (req, res) => {
   }
 });
 
+// Renombrar carpeta
+app.post('/folders/:id/update', async (req, res) => {
+  const folderId = req.params.id;
+  const { name } = req.body;
+  try {
+    if (!name) return res.redirect('/');
+    await pool.query('UPDATE folders SET name = $1 WHERE id = $2', [name, folderId]);
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error renombrando carpeta');
+  }
+});
+
+// Eliminar carpeta (los tableros quedan sin carpeta)
+app.post('/folders/:id/delete', async (req, res) => {
+  const folderId = req.params.id;
+  try {
+    await pool.query('UPDATE boards SET folder_id = NULL WHERE folder_id = $1', [folderId]);
+    await pool.query('DELETE FROM folders WHERE id = $1', [folderId]);
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error eliminando carpeta');
+  }
+});
+
 // Crear tablero
 app.post('/boards', async (req, res) => {
   try {
