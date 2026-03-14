@@ -556,6 +556,12 @@
         margin-bottom: 6px;
         display: block;
       }
+      .form-input-color {
+        width: 48px;
+        height: 36px;
+        padding: 2px;
+        cursor: pointer;
+      }
       .form-input {
         font-family: var(--ff);
         width: 100%;
@@ -680,6 +686,7 @@
           <div
             class="sidebar-item"
             onclick="filterByFolder('<%= f.id %>')"
+            <% if (f.color) { %>style="border-left: 3px solid <%= f.color %>"<% } %>
           >
             <span class="icon">⧉</span>
             <span><%= f.name %></span>
@@ -688,7 +695,7 @@
                 type="button"
                 class="folder-btn-icon"
                 title="Editar carpeta"
-                onclick="event.stopPropagation(); openEditFolderModal(<%= f.id %>, '<%- (f.name || "").replace(/'/g, '&#39;').replace(/"/g, '&quot;') %>');"
+                onclick="event.stopPropagation(); openEditFolderModal(<%= f.id %>, '<%- (f.name || "").replace(/'/g, '&#39;').replace(/"/g, '&quot;') %>', '<%= (f.color || "").replace(/'/g, "\\'") %>');"
               >
                 ✎
               </button>
@@ -716,13 +723,22 @@
           action="/folders"
           style="margin-top: 12px; padding: 0 8px"
         >
-          <input
-            class="form-input"
-            name="name"
-            type="text"
-            placeholder="Nueva carpeta..."
-            style="width: 100%; font-size: 11px; padding: 6px 8px"
-          />
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input
+              class="form-input"
+              name="name"
+              type="text"
+              placeholder="Nueva carpeta..."
+              style="flex: 1; font-size: 11px; padding: 6px 8px"
+            />
+            <input
+              name="color"
+              type="color"
+              value="#6366f1"
+              title="Color de la carpeta"
+              style="width: 28px; height: 28px; padding: 0; border: none; border-radius: 6px; cursor: pointer;"
+            />
+          </div>
         </form>
       </aside>
 
@@ -813,7 +829,7 @@
             data-folder-id="<%= f.id %>"
             onclick="filterByFolder('<%= f.id %>')"
           >
-            <div class="board-thumb"></div>
+            <div class="board-thumb" <% if (f.color) { %>style="background: radial-gradient(circle at 0% 0%, <%= f.color %>, rgba(15, 23, 42, 0.9));"<% } %>></div>
             <div class="board-info">
               <div class="board-name"><%= f.name %></div>
               <div class="board-meta">
@@ -1018,6 +1034,15 @@
               name="name"
               type="text"
               required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <input
+              class="form-input form-input-color"
+              id="edit-folder-color"
+              name="color"
+              type="color"
             />
           </div>
           <div class="modal-actions">
@@ -1393,9 +1418,10 @@
           el.style.display = show ? '' : 'none';
         });
       }
-      function openEditFolderModal(folderId, currentName) {
+      function openEditFolderModal(folderId, currentName, currentColor) {
         document.getElementById('edit-folder-form').action = '/folders/' + String(folderId) + '/update';
         document.getElementById('edit-folder-name').value = (currentName || '').replace(/&#39;/g, "'");
+        document.getElementById('edit-folder-color').value = (currentColor || '#6366f1');
         document.getElementById('edit-folder-modal').style.display = 'flex';
       }
       function closeEditFolderModal() {

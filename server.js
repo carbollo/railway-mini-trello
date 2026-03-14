@@ -30,7 +30,8 @@ async function ensureSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS folders (
       id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL
+      name TEXT NOT NULL,
+      color TEXT
     );
   `);
 
@@ -116,6 +117,10 @@ async function ensureSchema() {
       name TEXT NOT NULL,
       position INTEGER NOT NULL DEFAULT 0
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE folders ADD COLUMN IF NOT EXISTS color TEXT;
   `);
 }
 
@@ -207,9 +212,10 @@ app.post('/boards/:id/star', async (req, res) => {
 // Crear carpeta de tableros
 app.post('/folders', async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, color } = req.body;
     if (!name) return res.redirect('/');
-    await pool.query('INSERT INTO folders (name) VALUES ($1)', [name]);
+    const safeColor = color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
+    await pool.query('INSERT INTO folders (name, color) VALUES ($1, $2)', [name, safeColor]);
     res.redirect('/');
   } catch (err) {
     console.error(err);
@@ -220,14 +226,15 @@ app.post('/folders', async (req, res) => {
 // Renombrar carpeta
 app.post('/folders/:id/update', async (req, res) => {
   const folderId = req.params.id;
-  const { name } = req.body;
+  const { name, color } = req.body;
   try {
     if (!name) return res.redirect('/');
-    await pool.query('UPDATE folders SET name = $1 WHERE id = $2', [name, folderId]);
+    const safeColor = color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
+    await pool.query('UPDATE folders SET name = $1, color = $2 WHERE id = $3', [name, safeColor, folderId]);
     res.redirect('/');
   } catch (err) {
     console.error(err);
-    res.status(500).send('Error renombrando carpeta');
+    res.status(500).send('Error actualizando carpeta');
   }
 });
 
