@@ -28,11 +28,19 @@ app.set('views', path.join(__dirname, 'views'));
 
 async function ensureSchema() {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS folders (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL
+    );
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS boards (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      is_starred BOOLEAN NOT NULL DEFAULT FALSE
+      is_starred BOOLEAN NOT NULL DEFAULT FALSE,
+      folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL
     );
   `);
 
@@ -89,7 +97,8 @@ async function ensureSchema() {
   await pool.query(`
     ALTER TABLE boards
     ADD COLUMN IF NOT EXISTS description TEXT,
-    ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL;
   `);
 }
 
@@ -99,7 +108,10 @@ app.get('/', async (req, res) => {
     const { rows: boards } = await pool.query(
       'SELECT * FROM boards ORDER BY id DESC'
     );
-    res.render('boards', { boards });
+    const { rows: folders } = await pool.query(
+      'SELECT * FROM folders ORDER BY name ASC'
+    );
+    res.render('boards', { boards, folders });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error cargando tableros');
@@ -160,15 +172,30 @@ app.post('/boards/:id/star', async (req, res) => {
   }
 });
 
+// Crear carpeta de tableros
+app.post('/folders', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.redirect('/');
+    await pool.query('INSERT INTO folders (name) VALUES ($1)', [name]);
+    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error creando carpeta');
+  }
+});
+
 // Crear tablero
 app.post('/boards', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, folder_id } = req.body;
     if (!name) return res.redirect('/');
-    await pool.query('INSERT INTO boards (name, description) VALUES ($1, $2)', [
-      name,
-      description || null,
-    ]);
+    const folderId =
+      folder_id && String(folder_id).trim() !== '' ? parseInt(folder_id, 10) : null;
+    await pool.query(
+      'INSERT INTO boards (name, description, folder_id) VALUES ($1, $2, $3)',
+      [name, description || null, folderId]
+    );
     res.redirect('/');
   } catch (err) {
     console.error(err);

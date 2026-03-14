@@ -624,6 +624,42 @@
           </div>
           <% }) %>
         </div>
+
+        <div class="sidebar-section" style="margin-top: 18px">Carpetas</div>
+        <div id="sidebar-folders">
+          <div
+            class="sidebar-item"
+            onclick="filterByFolder('')"
+          >
+            <span class="icon">∘</span>
+            <span>Todas</span>
+          </div>
+          <% if (typeof folders !== 'undefined') { %>
+          <% folders.forEach(function (f) { %>
+          <div
+            class="sidebar-item"
+            onclick="filterByFolder('<%= f.id %>')"
+          >
+            <span class="icon">⧉</span>
+            <span><%= f.name %></span>
+          </div>
+          <% }) %>
+          <% } %>
+        </div>
+
+        <form
+          method="POST"
+          action="/folders"
+          style="margin-top: 12px; padding: 0 8px"
+        >
+          <input
+            class="form-input"
+            name="name"
+            type="text"
+            placeholder="Nueva carpeta..."
+            style="width: 100%; font-size: 11px; padding: 6px 8px"
+          />
+        </form>
       </aside>
 
       <!-- MAIN -->
@@ -657,7 +693,7 @@
           <button
             class="filter-tag on"
             type="button"
-            onclick="filterBoards('')"
+            onclick="filterBoards(''); filterByFolder('')"
           >
             Todos
           </button>
@@ -705,6 +741,7 @@
             data-name="<%= b.name.toLowerCase() %>"
             data-star="<%= b.is_starred ? '1' : '0' %>"
             data-id="<%= b.id %>"
+            data-folder-id="<%= b.folder_id || '' %>"
           >
             <div class="board-thumb">
               <div class="board-mini-cols">
@@ -813,6 +850,17 @@
               placeholder="Descripción corta (opcional)"
             />
           </div>
+          <% if (typeof folders !== 'undefined' && folders.length) { %>
+          <div class="form-group">
+            <label class="form-label">Carpeta</label>
+            <select class="form-input" name="folder_id">
+              <option value="">Sin carpeta</option>
+              <% folders.forEach(function (f) { %>
+              <option value="<%= f.id %>"><%= f.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <% } %>
           <div class="modal-actions">
             <button
               class="btn btn-ghost"
@@ -853,6 +901,23 @@
           const name = c.getAttribute('data-name') || '';
           c.style.display = !term || name.includes(term) ? '' : 'none';
         });
+      }
+      function filterByFolder(folderId) {
+        const cards = document.querySelectorAll('.board-card[data-folder-id]');
+        const target = String(folderId || '').trim();
+        cards.forEach((c) => {
+          const fid = (c.getAttribute('data-folder-id') || '').trim();
+          const matches = !target || fid === target;
+          c.style.display = matches ? '' : 'none';
+        });
+        const title = document.getElementById('all-title');
+        if (title) {
+          if (!target) {
+            title.textContent = 'Todos los tableros';
+          } else {
+            title.textContent = 'Tableros en carpeta';
+          }
+        }
       }
       function showStarred() {
         const title = document.getElementById('all-title');
