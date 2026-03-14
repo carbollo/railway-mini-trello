@@ -991,8 +991,22 @@
         const target = String(folderId || '').trim();
         cards.forEach((c) => {
           const fid = (c.getAttribute('data-folder-id') || '').trim();
-          const matches = !target || fid === target;
-          c.style.display = matches ? '' : 'none';
+          const isFolderCard = c.classList.contains('folder-card');
+          let show = false;
+
+          if (!target) {
+            // Vista general: mostrar solo tableros sin carpeta y todas las tarjetas de carpeta
+            show = isFolderCard || !fid;
+          } else {
+            // Vista filtrada por carpeta concreta
+            if (isFolderCard) {
+              show = fid === target;
+            } else {
+              show = fid === target;
+            }
+          }
+
+          c.style.display = show ? '' : 'none';
         });
         const title = document.getElementById('all-title');
         if (title) {
@@ -1018,6 +1032,8 @@
         input.value = nextName;
         form.submit();
       }
+      // Estado inicial: vista general, sin carpeta seleccionada
+      filterByFolder('');
       function showStarred() {
         const title = document.getElementById('all-title');
         if (title) title.textContent = 'Tableros destacados';
