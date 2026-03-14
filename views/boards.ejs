@@ -1037,8 +1037,10 @@
         if (title) title.textContent = 'Tableros destacados';
         const cards = document.querySelectorAll('.board-card[data-star]');
         cards.forEach((c) => {
+          const isFolderCard = c.classList.contains('folder-card');
           const isStar = c.getAttribute('data-star') === '1';
-          c.style.display = isStar ? '' : 'none';
+          // No mostrar tarjetas de carpeta en destacados
+          c.style.display = isStar && !isFolderCard ? '' : 'none';
         });
       }
       function showRecent() {
