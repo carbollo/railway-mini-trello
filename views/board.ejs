@@ -308,6 +308,7 @@
         padding: 0 10px;
         overflow-y: auto;
         flex: 1;
+        min-height: 60px;
         scrollbar-width: thin;
         scrollbar-color: var(--bg4) transparent;
       }
@@ -376,6 +377,23 @@
       }
       .card-drag-handle:active {
         cursor: grabbing;
+      }
+      .card.is-dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+      .col-cards.drag-over {
+        background: rgba(127, 119, 221, 0.06);
+        border-radius: var(--radius-sm);
+      }
+      .card.drop-before {
+        border-top: 3px solid #7f77dd;
+        margin-top: 2px;
+      }
+      .card.drop-after {
+        border-bottom: 3px solid #7f77dd;
+        margin-bottom: 2px;
       }
       .card-tags {
         display: flex;
@@ -935,8 +953,14 @@
     </div>
 
     <script>
-      // Drag & Drop simple para mover tarjetas entre listas
       let draggedCard = null;
+
+      function clearDropPlaceholders() {
+        document.querySelectorAll('.col-cards.drag-over').forEach((el) => el.classList.remove('drag-over'));
+        document.querySelectorAll('.card.drop-before, .card.drop-after').forEach((el) => {
+          el.classList.remove('drop-before', 'drop-after');
+        });
+      }
 
       document.addEventListener('dragstart', (e) => {
         const handle = e.target.closest('.card-drag-handle');
@@ -944,53 +968,89 @@
         const card = handle.closest('.card');
         if (!card) return;
         draggedCard = card;
+        card.classList.add('is-dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', card.getAttribute('data-card-id'));
         e.dataTransfer.setDragImage(card, 0, 0);
-        card.style.opacity = '0.6';
       });
 
-      document.addEventListener('dragend', (e) => {
-        if (draggedCard) draggedCard.style.opacity = '';
+      document.addEventListener('dragend', () => {
+        if (draggedCard) draggedCard.classList.remove('is-dragging');
+        clearDropPlaceholders();
         draggedCard = null;
       });
 
       document.addEventListener('dragover', (e) => {
-        if (e.target.closest('.col-cards') || e.target.closest('.card')) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
+        const colCards = e.target.closest('.col-cards');
+        const cardUnder = e.target.closest('.card');
+        if (!colCards) {
+          clearDropPlaceholders();
+          return;
         }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        colCards.classList.add('drag-over');
+        document.querySelectorAll('.col-cards').forEach((c) => {
+          if (c !== colCards) c.classList.remove('drag-over');
+        });
+
+        document.querySelectorAll('.card').forEach((c) => c.classList.remove('drop-before', 'drop-after'));
+
+        if (cardUnder && cardUnder !== draggedCard) {
+          const rect = cardUnder.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          if (e.clientY < mid) {
+            cardUnder.classList.add('drop-before');
+          } else {
+            cardUnder.classList.add('drop-after');
+          }
+        }
+      });
+
+      document.addEventListener('dragleave', (e) => {
+        if (!e.target.closest('.col-cards')) clearDropPlaceholders();
       });
 
       document.addEventListener('drop', async (e) => {
         if (!draggedCard) return;
 
-        const cardsContainer = e.target.closest('.col-cards');
-        if (!cardsContainer) return;
+        const colCards = e.target.closest('.col-cards');
+        if (!colCards) return;
 
         e.preventDefault();
-        draggedCard.style.opacity = '';
+        clearDropPlaceholders();
+        draggedCard.classList.remove('is-dragging');
 
-        const listId = cardsContainer.getAttribute('data-list-id');
+        const listId = colCards.getAttribute('data-list-id');
         const cardId = draggedCard.getAttribute('data-card-id');
 
-        if (cardsContainer === draggedCard.parentElement) {
-          draggedCard = null;
-          return;
+        let insertBeforeNode = null;
+        const cardUnder = e.target.closest('.card');
+        if (cardUnder && cardUnder !== draggedCard) {
+          const rect = cardUnder.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          insertBeforeNode = e.clientY < mid ? cardUnder : cardUnder.nextElementSibling;
         }
 
-        cardsContainer.appendChild(draggedCard);
+        if (insertBeforeNode) {
+          colCards.insertBefore(draggedCard, insertBeforeNode);
+        } else {
+          colCards.appendChild(draggedCard);
+        }
+
+        const ids = Array.from(colCards.querySelectorAll('.card[data-card-id]')).map((el) =>
+          el.getAttribute('data-card-id')
+        );
 
         try {
+          const targetIndex = ids.indexOf(cardId);
+
           await fetch('/cards/' + cardId + '/move', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ targetListId: listId }),
+            body: JSON.stringify({ targetListId: listId, targetPosition: targetIndex }),
           });
-
-          const ids = Array.from(
-            cardsContainer.querySelectorAll('.card[data-card-id]')
-          ).map((el) => el.getAttribute('data-card-id'));
 
           await fetch('/lists/' + listId + '/reorder', {
             method: 'POST',
