@@ -40,7 +40,8 @@ async function ensureSchema() {
       name TEXT NOT NULL,
       description TEXT,
       is_starred BOOLEAN NOT NULL DEFAULT FALSE,
-      folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL
+      folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL,
+      color TEXT
     );
   `);
 
@@ -98,7 +99,8 @@ async function ensureSchema() {
     ALTER TABLE boards
     ADD COLUMN IF NOT EXISTS description TEXT,
     ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS color TEXT;
   `);
 }
 
@@ -215,13 +217,15 @@ app.post('/folders/:id/delete', async (req, res) => {
 // Crear tablero
 app.post('/boards', async (req, res) => {
   try {
-    const { name, description, folder_id } = req.body;
+    const { name, description, folder_id, color } = req.body;
     if (!name) return res.redirect('/');
     const folderId =
       folder_id && String(folder_id).trim() !== '' ? parseInt(folder_id, 10) : null;
+    const safeColor =
+      color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
     await pool.query(
-      'INSERT INTO boards (name, description, folder_id) VALUES ($1, $2, $3)',
-      [name, description || null, folderId]
+      'INSERT INTO boards (name, description, folder_id, color) VALUES ($1, $2, $3, $4)',
+      [name, description || null, folderId, safeColor]
     );
     res.redirect('/');
   } catch (err) {
@@ -233,14 +237,15 @@ app.post('/boards', async (req, res) => {
 // Actualizar tablero (nombre y descripción)
 app.post('/boards/:id/update', async (req, res) => {
   const boardId = req.params.id;
-  const { name, description } = req.body;
+  const { name, description, color } = req.body;
   if (!name) return res.redirect(`/boards/${boardId}`);
   try {
-    await pool.query('UPDATE boards SET name = $1, description = $2 WHERE id = $3', [
-      name,
-      description || null,
-      boardId,
-    ]);
+    const safeColor =
+      color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
+    await pool.query(
+      'UPDATE boards SET name = $1, description = $2, color = $3 WHERE id = $4',
+      [name, description || null, safeColor, boardId]
+    );
     res.redirect(`/boards/${boardId}`);
   } catch (err) {
     console.error(err);
