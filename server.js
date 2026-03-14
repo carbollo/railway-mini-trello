@@ -234,11 +234,14 @@ app.post('/boards', async (req, res) => {
   }
 });
 
-// Actualizar tablero (nombre y descripción)
+// Actualizar tablero (nombre, descripción, color). Sin redirección si es petición AJAX.
 app.post('/boards/:id/update', async (req, res) => {
   const boardId = req.params.id;
-  const { name, description, color } = req.body;
-  if (!name) return res.redirect('/');
+  const { name, description, color, noRedirect } = req.body;
+  const isAjax = noRedirect === '1' || req.get('X-Requested-With') === 'XMLHttpRequest';
+  if (!name) {
+    return isAjax ? res.status(400).end() : res.redirect('/');
+  }
   try {
     const safeColor =
       color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
@@ -246,9 +249,11 @@ app.post('/boards/:id/update', async (req, res) => {
       'UPDATE boards SET name = $1, description = $2, color = $3 WHERE id = $4',
       [name, description || null, safeColor, boardId]
     );
+    if (isAjax) return res.status(204).end();
     res.redirect('/');
   } catch (err) {
     console.error(err);
+    if (isAjax) return res.status(500).end();
     res.status(500).send('Error actualizando tablero');
   }
 });

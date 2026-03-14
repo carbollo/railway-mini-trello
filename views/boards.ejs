@@ -997,7 +997,8 @@
     >
       <div class="modal">
         <div class="modal-title">Editar tablero</div>
-        <form id="edit-board-form" method="POST">
+        <form id="edit-board-form">
+          <input type="hidden" name="noRedirect" value="1" />
           <div class="form-group">
             <label class="form-label">Nombre del tablero</label>
             <input
@@ -1059,7 +1060,9 @@
         document.body.appendChild(t);
         setTimeout(() => t && t.remove(), 2200);
       }
+      var editingBoardId = null;
       function openEditBoardModal(boardId) {
+        editingBoardId = boardId;
         const card = document.querySelector(
           '.board-card[data-id=\"' + String(boardId) + '\"]'
         );
@@ -1067,11 +1070,9 @@
         const name = card.querySelector('.board-name')?.textContent || '';
         const desc = card.getAttribute('data-description') || '';
         const colorAttr = card.getAttribute('data-color') || '';
-        const form = document.getElementById('edit-board-form');
         const nameInput = document.getElementById('edit-board-name');
         const descInput = document.getElementById('edit-board-description');
         const colorInput = document.getElementById('edit-board-color');
-        form.action = '/boards/' + String(boardId) + '/update';
         nameInput.value = name;
         descInput.value = desc;
         colorInput.value = colorAttr || '#6366f1';
@@ -1079,7 +1080,45 @@
       }
       function closeEditBoardModal() {
         document.getElementById('edit-board-modal').style.display = 'none';
+        editingBoardId = null;
       }
+      document.getElementById('edit-board-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (editingBoardId == null) return;
+        const form = this;
+        const formData = new FormData(form);
+        formData.append('noRedirect', '1');
+        fetch('/boards/' + editingBoardId + '/update', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: new URLSearchParams(formData),
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error();
+            const card = document.querySelector('.board-card[data-id="' + editingBoardId + '"]');
+            if (card) {
+              const name = form.querySelector('#edit-board-name').value;
+              const desc = form.querySelector('#edit-board-description').value;
+              const color = form.querySelector('#edit-board-color').value;
+              card.querySelector('.board-name').textContent = name;
+              card.setAttribute('data-name', name.toLowerCase());
+              card.setAttribute('data-description', desc);
+              card.setAttribute('data-color', color);
+              const thumb = card.querySelector('.board-thumb');
+              if (thumb) {
+                thumb.style.background = color
+                  ? 'linear-gradient(135deg, ' + color + ', #020617)'
+                  : '';
+              }
+              const tag = card.querySelector('.board-tag');
+              if (tag) tag.textContent = (desc || 'Tablero').slice(0, 18);
+            }
+            closeEditBoardModal();
+          })
+          .catch(function () {
+            toast('Error al guardar');
+          });
+      });
       function filterBoards(q) {
         const term = (q || '').toLowerCase().trim();
         const cards = document.querySelectorAll('.board-card[data-name]');
