@@ -1057,12 +1057,16 @@
       function showStarred() {
         const title = document.getElementById('all-title');
         if (title) title.textContent = 'Tableros destacados';
-        const cards = document.querySelectorAll('.board-card[data-star]');
+        const cards = document.querySelectorAll('.board-card');
         cards.forEach((c) => {
           const isFolderCard = c.classList.contains('folder-card');
           const isStar = c.getAttribute('data-star') === '1';
-          // No mostrar tarjetas de carpeta en destacados
-          c.style.display = isStar && !isFolderCard ? '' : 'none';
+          // En destacados solo se muestran tableros marcados con estrella, nunca carpetas
+          if (isFolderCard) {
+            c.style.display = 'none';
+          } else {
+            c.style.display = isStar ? '' : 'none';
+          }
         });
       }
       function showRecent() {
