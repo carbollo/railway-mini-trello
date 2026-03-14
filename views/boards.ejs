@@ -967,6 +967,17 @@
               value="#6366f1"
             />
           </div>
+          <% if (typeof templates !== 'undefined' && templates.length) { %>
+          <div class="form-group">
+            <label class="form-label">Plantilla</label>
+            <select class="form-input" name="template_id">
+              <option value="">Sin plantilla</option>
+              <% templates.forEach(function (t) { %>
+              <option value="<%= t.id %>"><%= t.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <% } %>
           <% if (typeof folders !== 'undefined' && folders.length) { %>
           <div class="form-group">
             <label class="form-label">Carpeta</label>

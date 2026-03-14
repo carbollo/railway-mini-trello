@@ -272,19 +272,35 @@ app.post('/templates', async (req, res) => {
   }
 });
 
-// Crear tablero
+// Crear tablero (opcionalmente desde plantilla)
 app.post('/boards', async (req, res) => {
   try {
-    const { name, description, folder_id, color } = req.body;
+    const { name, description, folder_id, color, template_id } = req.body;
     if (!name) return res.redirect('/');
     const folderId =
       folder_id && String(folder_id).trim() !== '' ? parseInt(folder_id, 10) : null;
     const safeColor =
       color && String(color).trim() !== '' ? String(color).trim().slice(0, 32) : null;
-    await pool.query(
-      'INSERT INTO boards (name, description, folder_id, color) VALUES ($1, $2, $3, $4)',
+    const { rows: inserted } = await pool.query(
+      'INSERT INTO boards (name, description, folder_id, color) VALUES ($1, $2, $3, $4) RETURNING id',
       [name, description || null, folderId, safeColor]
     );
+    const boardId = inserted[0].id;
+
+    const tid = template_id && String(template_id).trim() !== '' ? parseInt(template_id, 10) : null;
+    if (tid) {
+      const { rows: templateLists } = await pool.query(
+        'SELECT name, position FROM template_lists WHERE template_id = $1 ORDER BY position, id',
+        [tid]
+      );
+      for (const row of templateLists) {
+        await pool.query(
+          'INSERT INTO lists (board_id, name, position) VALUES ($1, $2, $3)',
+          [boardId, row.name, row.position]
+        );
+      }
+    }
+
     res.redirect('/');
   } catch (err) {
     console.error(err);
