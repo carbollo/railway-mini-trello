@@ -633,6 +633,9 @@
               data-card-id="<%= card.id %>"
               data-title="<%= card.title.toLowerCase() %>"
               data-labels="<%= (card.labels || '').toLowerCase() %>"
+              data-desc="<%- (card.description || '').replace(/\"/g, '&quot;') %>"
+              data-date="<%= card.due_date ? new Date(card.due_date).toISOString().slice(0, 10) : '' %>"
+              data-list-id="<%= list.id %>"
               data-done="<%= card.is_done ? '1' : '0' %>"
             >
               <div class="card-tags">
@@ -651,19 +654,14 @@
                   </span>
                   <% } %>
                 </div>
-                <form
-                  method="POST"
-                  action="/cards/<%= card.id %>/toggle-done"
-                  style="margin:0"
-                >
-                  <input type="hidden" name="boardId" value="<%= board.id %>" />
+                <div style="display:flex;gap:4px;align-items:center">
                   <button
-                    type="submit"
-                    title="Marcar completada"
+                    type="button"
+                    title="Editar tarjeta"
                     style="
-                      background: transparent;
-                      border: 1px solid <%= card.is_done ? '#22c55e' : 'var(--border2)' %>;
-                      color: <%= card.is_done ? '#22c55e' : 'var(--text3)' %>;
+                      background: var(--bg3);
+                      border: 1px solid var(--border2);
+                      color: var(--text3);
                       border-radius: 6px;
                       width: 24px;
                       height: 24px;
@@ -673,10 +671,37 @@
                       font-size: 13px;
                       cursor: pointer;
                     "
+                    onclick="event.preventDefault(); event.stopPropagation(); openCardEditModal(<%= card.id %>, <%= list.id %>);"
                   >
-                    <%= card.is_done ? '✓' : '' %>
+                    ✎
                   </button>
-                </form>
+                  <form
+                    method="POST"
+                    action="/cards/<%= card.id %>/toggle-done"
+                    style="margin:0"
+                  >
+                    <input type="hidden" name="boardId" value="<%= board.id %>" />
+                    <button
+                      type="submit"
+                      title="Marcar completada"
+                      style="
+                        background: transparent;
+                        border: 1px solid <%= card.is_done ? '#22c55e' : 'var(--border2)' %>;
+                        color: <%= card.is_done ? '#22c55e' : 'var(--text3)' %>;
+                        border-radius: 6px;
+                        width: 24px;
+                        height: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 13px;
+                        cursor: pointer;
+                      "
+                    >
+                      <%= card.is_done ? '✓' : '' %>
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
             <% }) %>
@@ -774,6 +799,77 @@
       </form>
     </div>
 
+    <!-- MODAL EDITAR TARJETA -->
+    <div
+      class="modal-bg"
+      id="edit-card-modal"
+      style="display:none"
+      onclick="if(event.target===this)closeCardEditModal()"
+    >
+      <div class="modal" style="max-width:420px">
+        <div class="modal-title">Editar tarjeta</div>
+        <form id="edit-card-form" method="POST">
+          <input type="hidden" name="boardId" value="<%= board.id %>" />
+          <input type="hidden" name="listId" id="edit-card-listId" />
+          <div class="form-group">
+            <label class="form-label">Título</label>
+            <input
+              class="form-input"
+              id="edit-card-title"
+              name="title"
+              type="text"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input
+              class="form-input"
+              id="edit-card-desc"
+              name="description"
+              type="text"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Etiqueta</label>
+            <input
+              class="form-input"
+              id="edit-card-labels"
+              name="labels"
+              type="text"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha límite</label>
+            <input
+              class="form-input"
+              id="edit-card-date"
+              name="due_date"
+              type="date"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lista</label>
+            <select class="form-input" id="edit-card-list-select">
+              <% lists.forEach(function (l) { %>
+              <option value="<%= l.id %>"><%= l.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button
+              class="btn btn-ghost"
+              type="button"
+              onclick="closeCardEditModal()"
+            >
+              Cancelar
+            </button>
+            <button class="btn btn-accent" type="submit">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       // Drag & Drop simple para mover tarjetas entre listas
       let draggedCard = null;
@@ -834,6 +930,38 @@
           draggedCard = null;
         }
       });
+
+      // Edición de tarjetas
+      let editingCardId = null;
+      function openCardEditModal(cardId, listId) {
+        editingCardId = String(cardId);
+        const card = document.querySelector(
+          '.card[data-card-id=\"' + String(cardId) + '\"]'
+        );
+        if (!card) return;
+        const title = card.querySelector('.card-title')?.textContent || '';
+        const desc = card.getAttribute('data-desc') || '';
+        const labels = card.getAttribute('data-labels') || '';
+        const date = card.getAttribute('data-date') || '';
+        const listIdAttr = listId || card.getAttribute('data-list-id') || '';
+
+        document.getElementById('edit-card-title').value = title;
+        document.getElementById('edit-card-desc').value = desc;
+        document.getElementById('edit-card-labels').value = labels;
+        document.getElementById('edit-card-date').value = date;
+        document.getElementById('edit-card-listId').value = listIdAttr;
+        const select = document.getElementById('edit-card-list-select');
+        if (select) select.value = listIdAttr;
+
+        const form = document.getElementById('edit-card-form');
+        form.action = '/cards/' + String(cardId) + '/update';
+
+        document.getElementById('edit-card-modal').style.display = 'flex';
+      }
+      function closeCardEditModal() {
+        document.getElementById('edit-card-modal').style.display = 'none';
+        editingCardId = null;
+      }
 
       // Filtro rápido de tarjetas por texto (título o etiqueta)
       const filterInput = document.getElementById('card-filter');
