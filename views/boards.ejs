@@ -998,10 +998,8 @@
             // Vista general: mostrar solo tableros sin carpeta y todas las tarjetas de carpeta
             show = isFolderCard || !fid;
           } else {
-            // Vista filtrada por carpeta concreta
-            if (isFolderCard) {
-              show = fid === target;
-            } else {
+            // Vista filtrada por carpeta concreta: solo tableros, no la tarjeta de carpeta
+            if (!isFolderCard) {
               show = fid === target;
             }
           }
