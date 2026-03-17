@@ -339,7 +339,7 @@
                     (board && board.folder_color)
                       ? `linear-gradient(135deg, ${board.folder_color}, #020617)`
                       : 'rgba(127,119,221,0.22)'
-                  %>; opacity:<%= card.is_done ? 0.55 : 1 %>;"
+                  %>; opacity:<%= card.is_done ? 0.55 : 1 %>; color:#e5e7eb;"
                 >
                   <div>
                     <% if (card.is_done) { %>
@@ -347,7 +347,7 @@
                     <% } %>
                     <%= card.title %>
                   </div>
-                  <div class="event-board"><%= card.list_name %></div>
+                  <div class="event-board" style="color:#e5e7eb;"><%= card.list_name %></div>
                 </div>
                 <% }) %>
               </div>
