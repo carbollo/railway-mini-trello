@@ -587,7 +587,7 @@ app.get('/calendar', async (req, res) => {
     )}`;
 
     const { rows: cards } = await pool.query(
-      `SELECT c.*, l.name AS list_name, b.name AS board_name
+      `SELECT c.*, l.name AS list_name, b.name AS board_name, b.color AS board_color
        FROM cards c
        JOIN lists l ON c.list_id = l.id
        JOIN boards b ON l.board_id = b.id

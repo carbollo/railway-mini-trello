@@ -335,7 +335,11 @@
                 <% cell.cards.forEach(function (card) { %>
                 <div
                   class="cal-event"
-                  style="background: rgba(127,119,221,0.22); opacity:<%= card.is_done ? 0.55 : 1 %>;"
+                  style="background:<%=
+                    (board && board.color)
+                      ? `linear-gradient(135deg, ${board.color}, #020617)`
+                      : 'rgba(127,119,221,0.22)'
+                  %>; opacity:<%= card.is_done ? 0.55 : 1 %>;"
                 >
                   <div>
                     <% if (card.is_done) { %>
