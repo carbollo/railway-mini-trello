@@ -290,11 +290,20 @@
                 <% cell.cards.forEach(function (card) { %>
                 <div
                   class="cal-event"
+                  data-card-id="<%= card.id %>"
+                  data-card-title="<%- (card.title || '').replace(/\"/g, '&quot;') %>"
+                  data-card-desc="<%- (card.description || '').replace(/\"/g, '&quot;') %>"
+                  data-card-list="<%- (card.list_name || '').replace(/\"/g, '&quot;') %>"
+                  data-card-board="<%- (card.board_name || '').replace(/\"/g, '&quot;') %>"
+                  data-card-labels="<%- (card.labels || '').replace(/\"/g, '&quot;') %>"
+                  data-card-date="<%= card.due_date ? card.due_date.toISOString().slice(0,10) : '' %>"
+                  data-card-start="<%= card.start_time ? card.start_time.toString().slice(0,5) : '' %>"
+                  data-card-end="<%= card.end_time ? card.end_time.toString().slice(0,5) : '' %>"
                   style="background:<%=
                     card.folder_color
                       ? `linear-gradient(135deg, ${card.folder_color}, #020617)`
                       : 'rgba(127,119,221,0.22)'
-                  %>; opacity:<%= card.is_done ? 0.55 : 1 %>; color:#e5e7eb;"
+                  %>; opacity:<%= card.is_done ? 0.55 : 1 %>; color:#e5e7eb; cursor:pointer;"
                 >
                   <div>
                     <% if (card.is_done) { %>✓ <% } %><%= card.title %>
@@ -318,6 +327,79 @@
         </section>
       </main>
     </div>
+    <!-- POPUP DETALLE TARJETA GLOBAL -->
+    <div
+      id="cal-card-modal"
+      class="modal-bg"
+      style="display:none"
+      onclick="if(event.target===this)document.getElementById('cal-card-modal').style.display='none'"
+    >
+      <div class="modal" style="max-width:420px">
+        <div class="modal-title" id="cal-card-title"></div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <div id="cal-card-desc" style="font-size:13px;color:var(--text2)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tablero / Lista</label>
+          <div id="cal-card-board-list" style="font-size:13px;color:var(--text2)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha y hora</label>
+          <div id="cal-card-datetime" style="font-size:13px;color:var(--text2)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Etiqueta</label>
+          <div id="cal-card-labels" style="font-size:13px;color:var(--text2)"></div>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            onclick="document.getElementById('cal-card-modal').style.display='none'"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        function openCalCardModalFromEl(el) {
+          if (!el) return;
+          window.__calCardId = el.getAttribute('data-card-id') || '';
+          var title = el.getAttribute('data-card-title') || '';
+          var desc = el.getAttribute('data-card-desc') || '';
+          var listName = el.getAttribute('data-card-list') || '';
+          var boardName = el.getAttribute('data-card-board') || '';
+          var labels = el.getAttribute('data-card-labels') || '';
+          var date = el.getAttribute('data-card-date') || '';
+          var start = el.getAttribute('data-card-start') || '';
+          var end = el.getAttribute('data-card-end') || '';
+          document.getElementById('cal-card-title').textContent = title || '(Sin título)';
+          document.getElementById('cal-card-desc').textContent = desc || 'Sin descripción';
+          var bl = '';
+          if (boardName) bl += boardName;
+          if (listName) bl += (bl ? ' · ' : '') + listName;
+          document.getElementById('cal-card-board-list').textContent = bl || 'Sin tablero';
+          var dt = date || '';
+          if (start || end) {
+            dt += (dt ? ' · ' : '') + (start || '');
+            if (start && end) dt += '-';
+            dt += end || '';
+          }
+          document.getElementById('cal-card-datetime').textContent = dt || 'Sin fecha';
+          document.getElementById('cal-card-labels').textContent = labels || 'Sin etiqueta';
+          document.getElementById('cal-card-modal').style.display = 'flex';
+        }
+        document.querySelectorAll('.cal-event').forEach(function (el) {
+          el.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openCalCardModalFromEl(el);
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
 
