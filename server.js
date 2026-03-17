@@ -392,10 +392,29 @@ app.get('/boards/:id', async (req, res) => {
     if (boardRows.length === 0) return res.status(404).send('Tablero no encontrado');
     const board = boardRows[0];
 
-    const { rows: lists } = await pool.query(
+    // Asegura que exista siempre una columna "Completados" en el tablero
+    let { rows: lists } = await pool.query(
       'SELECT * FROM lists WHERE board_id = $1 ORDER BY position ASC, id ASC',
       [boardId]
     );
+    let completedList = lists.find(
+      (l) => l.name && l.name.toLowerCase() === 'completados'
+    );
+    if (!completedList) {
+      const { rows: posRows } = await pool.query(
+        'SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM lists WHERE board_id = $1',
+        [boardId]
+      );
+      const nextPos = posRows[0]?.next_pos ?? 0;
+      const { rows: inserted } = await pool.query(
+        'INSERT INTO lists (board_id, name, position) VALUES ($1, $2, $3) RETURNING *',
+        [boardId, 'Completados', nextPos]
+      );
+      completedList = inserted[0];
+      lists.push(completedList);
+      // Reordenar por posición por si se añadió al final
+      lists.sort((a, b) => a.position - b.position || a.id - b.id);
+    }
 
     const { rows: cards } = await pool.query(
       'SELECT * FROM cards WHERE is_archived = FALSE AND list_id IN (SELECT id FROM lists WHERE board_id = $1) ORDER BY position ASC, id ASC',
@@ -758,7 +777,47 @@ app.post('/cards/:id/toggle-done', async (req, res) => {
   const { boardId } = req.body;
   if (!boardId) return res.status(400).send('boardId requerido');
   try {
-    await pool.query('UPDATE cards SET is_done = NOT is_done WHERE id = $1', [cardId]);
+    // Obtener estado actual de la tarjeta
+    const { rows: cardRows } = await pool.query(
+      'SELECT is_done FROM cards WHERE id = $1',
+      [cardId]
+    );
+    if (cardRows.length === 0) return res.redirect(`/boards/${boardId}`);
+    const currentlyDone = cardRows[0].is_done;
+    const nextDone = !currentlyDone;
+
+    // Asegurar lista "Completados" en este tablero
+    const { rows: existingLists } = await pool.query(
+      'SELECT * FROM lists WHERE board_id = $1 ORDER BY position ASC, id ASC',
+      [boardId]
+    );
+    let completedList = existingLists.find(
+      (l) => l.name && l.name.toLowerCase() === 'completados'
+    );
+    if (!completedList) {
+      const { rows: posRows } = await pool.query(
+        'SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM lists WHERE board_id = $1',
+        [boardId]
+      );
+      const nextPos = posRows[0]?.next_pos ?? 0;
+      const { rows: inserted } = await pool.query(
+        'INSERT INTO lists (board_id, name, position) VALUES ($1, $2, $3) RETURNING *',
+        [boardId, 'Completados', nextPos]
+      );
+      completedList = inserted[0];
+    }
+
+    if (nextDone) {
+      // Marcar como hecha y mover a "Completados"
+      await pool.query(
+        'UPDATE cards SET is_done = TRUE, list_id = $1 WHERE id = $2',
+        [completedList.id, cardId]
+      );
+    } else {
+      // Solo desmarcar como hecha (sin moverla de lista)
+      await pool.query('UPDATE cards SET is_done = FALSE WHERE id = $1', [cardId]);
+    }
+
     res.redirect(`/boards/${boardId}`);
   } catch (err) {
     console.error(err);
