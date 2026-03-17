@@ -290,10 +290,9 @@
                 <% cell.cards.forEach(function (card) { %>
                 <div
                   class="cal-event"
-                  data-board-color="<%= card.board_color || '#7f77dd' %>"
                   style="background:<%=
-                    card.board_color
-                      ? `linear-gradient(135deg, ${card.board_color}, #020617)`
+                    card.folder_color
+                      ? `linear-gradient(135deg, ${card.folder_color}, #020617)`
                       : 'rgba(127,119,221,0.22)'
                   %>; opacity:<%= card.is_done ? 0.55 : 1 %>;"
                 >
@@ -313,51 +312,6 @@
         </section>
       </main>
     </div>
-    <script>
-      (function () {
-        function hexToRgb(hex) {
-          if (!hex) return null;
-          let h = hex.trim();
-          if (h[0] === '#') h = h.slice(1);
-          if (h.length === 3) {
-            h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-          }
-          if (h.length !== 6) return null;
-          const r = parseInt(h.slice(0, 2), 16);
-          const g = parseInt(h.slice(2, 4), 16);
-          const b = parseInt(h.slice(4, 6), 16);
-          if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
-          return { r, g, b };
-        }
-        function luminanceFromHex(hex) {
-          const rgb = hexToRgb(hex);
-          if (!rgb) return 0;
-          const toLin = (v) => {
-            const n = v / 255;
-            return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
-          };
-          const r = toLin(rgb.r);
-          const g = toLin(rgb.g);
-          const b = toLin(rgb.b);
-          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        }
-        function applyEventTextColors() {
-          const events = document.querySelectorAll('.cal-event[data-board-color]');
-          events.forEach((el) => {
-            const color = el.getAttribute('data-board-color');
-            if (!color) return;
-            const lum = luminanceFromHex(color);
-            const isLight = lum > 0.55;
-            el.style.color = isLight ? '#020617' : '#e5e7eb';
-            const meta = el.querySelector('.event-board');
-            if (meta) {
-              meta.style.color = isLight ? '#111827' : '#9ca3af';
-            }
-          });
-        }
-        applyEventTextColors();
-      })();
-    </script>
   </body>
 </html>
 

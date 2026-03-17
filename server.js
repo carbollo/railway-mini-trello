@@ -487,7 +487,13 @@ app.get('/boards/:id/calendar', async (req, res) => {
   const { month } = req.query; // formato esperado YYYY-MM
 
   try {
-    const { rows: boardRows } = await pool.query('SELECT * FROM boards WHERE id = $1', [boardId]);
+    const { rows: boardRows } = await pool.query(
+      `SELECT b.*, f.color AS folder_color
+       FROM boards b
+       LEFT JOIN folders f ON b.folder_id = f.id
+       WHERE b.id = $1`,
+      [boardId]
+    );
     if (boardRows.length === 0) return res.status(404).send('Tablero no encontrado');
     const board = boardRows[0];
 
@@ -587,10 +593,11 @@ app.get('/calendar', async (req, res) => {
     )}`;
 
     const { rows: cards } = await pool.query(
-      `SELECT c.*, l.name AS list_name, b.name AS board_name, b.color AS board_color
+      `SELECT c.*, l.name AS list_name, b.name AS board_name, b.color AS board_color, f.color AS folder_color
        FROM cards c
        JOIN lists l ON c.list_id = l.id
        JOIN boards b ON l.board_id = b.id
+       LEFT JOIN folders f ON b.folder_id = f.id
        WHERE c.is_archived = FALSE
        AND c.due_date IS NOT NULL
        AND c.due_date BETWEEN $1 AND $2
