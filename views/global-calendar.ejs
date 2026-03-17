@@ -142,6 +142,19 @@
         background: var(--bg3);
         color: var(--text);
       }
+      .layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .cal-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
+      }
       .cal-view {
         flex: 1;
         overflow: hidden;
@@ -228,68 +241,70 @@
       </div>
     </nav>
 
-    <main class="main">
-      <div class="cal-toolbar">
-        <div class="cal-nav">
-          <button
-            class="cal-nav-btn"
-            onclick="window.location.href='?month=<%= prevMonthParam %>'"
-          >
-            ‹
-          </button>
-          <button
-            class="cal-nav-btn"
-            onclick="window.location.href='?month=<%= nextMonthParam %>'"
-          >
-            ›
-          </button>
-          <div class="cal-month-label"><%= monthLabel %></div>
-          <button
-            class="today-btn"
-            type="button"
-            onclick="window.location.href='/calendar'"
-          >
-            Hoy
-          </button>
-        </div>
-      </div>
-
-      <section class="cal-view">
-        <div class="dow-header">
-          <div class="dow-cell">Lun</div>
-          <div class="dow-cell">Mar</div>
-          <div class="dow-cell">Mié</div>
-          <div class="dow-cell">Jue</div>
-          <div class="dow-cell">Vie</div>
-          <div class="dow-cell">Sáb</div>
-          <div class="dow-cell">Dom</div>
-        </div>
-
-        <div class="cal-grid">
-          <% calendarCells.forEach(function (cell) { %>
-          <div
-            class="cal-cell <%= cell.inCurrent ? '' : 'other-month' %>"
-          >
-            <% if (cell.inCurrent) { %>
-            <div class="day-num"><%= cell.dayNum %></div>
-            <div class="cal-events">
-              <% cell.cards.forEach(function (card) { %>
-              <div class="cal-event" style="opacity:<%= card.is_done ? 0.55 : 1 %>;">
-                <div>
-                  <% if (card.is_done) { %>✓ <% } %><%= card.title %>
-                </div>
-                <div class="event-board">
-                  <%= card.board_name %> · <%= card.list_name %>
-                </div>
-              </div>
-              <% }) %>
-            </div>
-            <% } %>
+    <div class="layout">
+      <main class="cal-main">
+        <div class="cal-toolbar">
+          <div class="cal-nav">
+            <button
+              class="cal-nav-btn"
+              onclick="window.location.href='?month=<%= prevMonthParam %>'"
+            >
+              ‹
+            </button>
+            <button
+              class="cal-nav-btn"
+              onclick="window.location.href='?month=<%= nextMonthParam %>'"
+            >
+              ›
+            </button>
+            <div class="cal-month-label"><%= monthLabel %></div>
+            <button
+              class="today-btn"
+              type="button"
+              onclick="window.location.href='/calendar'"
+            >
+              Hoy
+            </button>
           </div>
-          <% }) %>
         </div>
-      </section>
-    </main>
+
+        <section class="cal-view">
+          <div class="dow-header">
+            <div class="dow-cell">Lun</div>
+            <div class="dow-cell">Mar</div>
+            <div class="dow-cell">Mié</div>
+            <div class="dow-cell">Jue</div>
+            <div class="dow-cell">Vie</div>
+            <div class="dow-cell">Sáb</div>
+            <div class="dow-cell">Dom</div>
+          </div>
+
+          <div class="cal-grid">
+            <% calendarCells.forEach(function (cell) { %>
+            <div
+              class="cal-cell <%= cell.inCurrent ? '' : 'other-month' %>"
+            >
+              <% if (cell.inCurrent) { %>
+              <div class="day-num"><%= cell.dayNum %></div>
+              <div class="cal-events">
+                <% cell.cards.forEach(function (card) { %>
+                <div class="cal-event" style="opacity:<%= card.is_done ? 0.55 : 1 %>;">
+                  <div>
+                    <% if (card.is_done) { %>✓ <% } %><%= card.title %>
+                  </div>
+                  <div class="event-board">
+                    <%= card.board_name %> · <%= card.list_name %>
+                  </div>
+                </div>
+                <% }) %>
+              </div>
+              <% } %>
+            </div>
+            <% }) %>
+          </div>
+        </section>
+      </main>
+    </div>
   </body>
 </html>
 
