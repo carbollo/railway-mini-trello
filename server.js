@@ -63,6 +63,8 @@ async function ensureSchema() {
       description TEXT,
       position INTEGER NOT NULL DEFAULT 0,
       due_date DATE,
+      start_time TIME,
+      end_time TIME,
       labels TEXT,
       is_archived BOOLEAN NOT NULL DEFAULT FALSE,
       is_done BOOLEAN NOT NULL DEFAULT FALSE
@@ -73,6 +75,8 @@ async function ensureSchema() {
   await pool.query(`
     ALTER TABLE cards
     ADD COLUMN IF NOT EXISTS due_date DATE,
+    ADD COLUMN IF NOT EXISTS start_time TIME,
+    ADD COLUMN IF NOT EXISTS end_time TIME,
     ADD COLUMN IF NOT EXISTS labels TEXT,
     ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS is_done BOOLEAN NOT NULL DEFAULT FALSE;
@@ -679,7 +683,7 @@ app.post('/boards/:id/lists', async (req, res) => {
 // Crear tarjeta en una lista
 app.post('/lists/:id/cards', async (req, res) => {
   const listId = req.params.id;
-  const { title, description, boardId, labels, due_date } = req.body;
+  const { title, description, boardId, labels, due_date, start_time, end_time } = req.body;
   if (!title) return res.redirect(`/boards/${boardId}`);
   try {
     const { rows: posRows } = await pool.query(
@@ -688,8 +692,17 @@ app.post('/lists/:id/cards', async (req, res) => {
     );
     const nextPos = posRows[0].next_pos || 0;
     await pool.query(
-      'INSERT INTO cards (list_id, title, description, position, labels, due_date) VALUES ($1, $2, $3, $4, $5, $6)',
-      [listId, title, description || '', nextPos, labels || null, due_date || null]
+      'INSERT INTO cards (list_id, title, description, position, labels, due_date, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [
+        listId,
+        title,
+        description || '',
+        nextPos,
+        labels || null,
+        due_date || null,
+        start_time || null,
+        end_time || null,
+      ]
     );
     res.redirect(`/boards/${boardId}`);
   } catch (err) {
@@ -701,13 +714,22 @@ app.post('/lists/:id/cards', async (req, res) => {
 // Actualizar tarjeta (título, descripción, etiquetas, fecha de vencimiento)
 app.post('/cards/:id/update', async (req, res) => {
   const cardId = req.params.id;
-  const { boardId, listId, title, description, labels, due_date } = req.body;
+  const { boardId, listId, title, description, labels, due_date, start_time, end_time } = req.body;
   if (!boardId) return res.status(400).send('boardId requerido');
   if (!title) return res.redirect(`/boards/${boardId}`);
   try {
     await pool.query(
-      'UPDATE cards SET title = $1, description = $2, labels = $3, due_date = $4, list_id = $5 WHERE id = $6',
-      [title, description || '', labels || null, due_date || null, listId, cardId]
+      'UPDATE cards SET title = $1, description = $2, labels = $3, due_date = $4, start_time = $5, end_time = $6, list_id = $7 WHERE id = $8',
+      [
+        title,
+        description || '',
+        labels || null,
+        due_date || null,
+        start_time || null,
+        end_time || null,
+        listId,
+        cardId,
+      ]
     );
     res.redirect(`/boards/${boardId}`);
   } catch (err) {

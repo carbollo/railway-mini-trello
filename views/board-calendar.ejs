@@ -346,6 +346,12 @@
                     ✓
                     <% } %>
                     <%= card.title %>
+                    <% if (card.start_time || card.end_time) { %>
+                    ·
+                    <%= card.start_time ? card.start_time.toString().slice(0, 5) : '' %>
+                    <% if (card.start_time && card.end_time) { %>-<% } %>
+                    <%= card.end_time ? card.end_time.toString().slice(0, 5) : '' %>
+                    <% } %>
                   </div>
                   <div class="event-board" style="color:#e5e7eb;"><%= card.list_name %></div>
                 </div>

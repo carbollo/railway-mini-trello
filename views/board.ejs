@@ -710,6 +710,8 @@
               data-labels="<%= (card.labels || '').toLowerCase() %>"
               data-desc="<%- (card.description || '').replace(/\"/g, '&quot;') %>"
               data-date="<%= card.due_date ? new Date(card.due_date).toISOString().slice(0, 10) : '' %>"
+              data-start-time="<%= card.start_time || '' %>"
+              data-end-time="<%= card.end_time || '' %>"
               data-list-id="<%= list.id %>"
               data-done="<%= card.is_done ? '1' : '0' %>"
             >
@@ -839,6 +841,18 @@
                   class="form-input"
                   style="flex:1"
                 />
+              <input
+                type="time"
+                name="start_time"
+                class="form-input"
+                style="width:110px"
+              />
+              <input
+                type="time"
+                name="end_time"
+                class="form-input"
+                style="width:110px"
+              />
                 <input
                   type="text"
                   name="labels"
@@ -951,12 +965,29 @@
           </div>
           <div class="form-group">
             <label class="form-label">Fecha límite</label>
-            <input
-              class="form-input"
-              id="edit-card-date"
-              name="due_date"
-              type="date"
-            />
+            <div style="display:flex;gap:6px">
+              <input
+                class="form-input"
+                id="edit-card-date"
+                name="due_date"
+                type="date"
+                style="flex:1"
+              />
+              <input
+                class="form-input"
+                id="edit-card-start"
+                name="start_time"
+                type="time"
+                style="width:110px"
+              />
+              <input
+                class="form-input"
+                id="edit-card-end"
+                name="end_time"
+                type="time"
+                style="width:110px"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Lista</label>
@@ -1104,12 +1135,18 @@
         const desc = card.getAttribute('data-desc') || '';
         const labels = card.getAttribute('data-labels') || '';
         const date = card.getAttribute('data-date') || '';
+        const startTime = card.getAttribute('data-start-time') || '';
+        const endTime = card.getAttribute('data-end-time') || '';
         const listIdAttr = listId || card.getAttribute('data-list-id') || '';
 
         document.getElementById('edit-card-title').value = title;
         document.getElementById('edit-card-desc').value = desc;
         document.getElementById('edit-card-labels').value = labels;
         document.getElementById('edit-card-date').value = date;
+        const startInput = document.getElementById('edit-card-start');
+        const endInput = document.getElementById('edit-card-end');
+        if (startInput) startInput.value = startTime;
+        if (endInput) endInput.value = endTime;
         document.getElementById('edit-card-listId').value = listIdAttr;
         const select = document.getElementById('edit-card-list-select');
         if (select) select.value = listIdAttr;
