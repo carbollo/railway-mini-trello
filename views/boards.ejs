@@ -994,7 +994,7 @@
           <% if (typeof folders !== 'undefined' && folders.length) { %>
           <div class="form-group">
             <label class="form-label">Carpeta</label>
-            <select class="form-input" name="folder_id">
+            <select class="form-input" name="folder_id" id="board-folder-select">
               <option value="">Sin carpeta</option>
               <% folders.forEach(function (f) { %>
               <option value="<%= f.id %>"><%= f.name %></option>
@@ -1370,9 +1370,11 @@
           c.style.display = !term || name.includes(term) ? '' : 'none';
         });
       }
+      let currentFolderFilter = '';
       function filterByFolder(folderId) {
         const cards = document.querySelectorAll('.board-card[data-folder-id]');
         const target = String(folderId || '').trim();
+        currentFolderFilter = target;
         cards.forEach((c) => {
           const fid = (c.getAttribute('data-folder-id') || '').trim();
           const isFolderCard = c.classList.contains('folder-card');
@@ -1426,6 +1428,21 @@
       }
       function closeEditFolderModal() {
         document.getElementById('edit-folder-modal').style.display = 'none';
+      }
+      function openModal() {
+        const modal = document.getElementById('modal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        const nameInput = document.getElementById('f-name');
+        if (nameInput) nameInput.focus();
+        const folderSelect = document.getElementById('board-folder-select');
+        if (folderSelect) {
+          folderSelect.value = currentFolderFilter || '';
+        }
+      }
+      function closeModal() {
+        const modal = document.getElementById('modal');
+        if (modal) modal.style.display = 'none';
       }
       // Estado inicial: vista general, sin carpeta seleccionada
       filterByFolder('');
